@@ -14,6 +14,7 @@
   --warning-bg: #fbf0d9;
   --warning-text: #6b4a0b;
   --danger: #b3261e;
+  --danger-bg: #fbe4e2;
   --drop: #e3ebf7;
   --success: #2f7a4a;
   --success-soft: #e3f2e8;
@@ -57,6 +58,7 @@
     --warning-bg: #3a2e14;
     --warning-text: #f0d394;
     --danger: #f08a80;
+    --danger-bg: #43201d;
     --drop: #233451;
     --success: #8fd6a8;
     --success-soft: #1c3a28;
@@ -381,9 +383,12 @@ select {
   padding: 12px 16px;
 }
 
+/* A grid, not a vertical flexbox: in a flex column, the wrapping day lists
+   get measured as if they wrapped more than they do, leaving a gap. */
 .step-panel-wrapup {
-  flex-direction: column;
-  align-items: stretch;
+  display: grid;
+  justify-content: stretch;
+  gap: 16px;
 }
 
 .step-title {
@@ -406,27 +411,37 @@ select {
 
 .step-actions {
   display: flex;
+  align-items: center;
   gap: 8px;
   margin-left: auto;
 }
 
+.backup-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: 8px;
+  font-size: 13px;
+  color: var(--text-2);
+  cursor: pointer;
+}
+
 .wrapup-days {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
   gap: 12px 24px;
   max-height: 320px;
   overflow-y: auto;
 }
 
 .wrapup-day {
+  flex: 1 1 210px;
   min-width: 0;
-  margin: 0;
-  padding: 0;
-  border: none;
 }
 
-.wrapup-day legend {
-  margin-bottom: 4px;
+.wrapup-legend {
+  margin: 0 0 4px;
   padding: 0;
   font-size: 12px;
   font-weight: 600;
@@ -447,6 +462,40 @@ select {
 
 .wrapup-task:hover {
   background: var(--surface-sunk);
+}
+
+
+.habit-grid {
+  margin-top: 6px;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.habit-grid th,
+.habit-grid td {
+  padding: 4px 8px;
+  text-align: center;
+}
+
+.habit-grid thead th {
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+.habit-grid tbody th {
+  padding-left: 0;
+  font-weight: 500;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.habit-grid tbody th .tag {
+  margin-right: 6px;
+  vertical-align: -4px;
+}
+
+.habit-skip {
+  color: var(--text-3);
 }
 
 .wrapup-task.is-done span:last-child {
@@ -476,6 +525,167 @@ select {
   border-radius: var(--radius);
   background: var(--warning-bg);
   color: var(--warning-text);
+}
+
+/* Past weeks */
+
+.history {
+  margin-bottom: 16px;
+}
+
+.history-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.history-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 650;
+}
+
+.history-empty {
+  padding: 32px;
+  border: 1px dashed var(--border-strong);
+  border-radius: 12px;
+  text-align: center;
+  color: var(--text-2);
+}
+
+.streaks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 12px;
+  padding: 0;
+  list-style: none;
+}
+
+.streak {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  font-size: 13px;
+}
+
+.streak-days {
+  font-weight: 600;
+  color: var(--success);
+}
+
+.history-body {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.week-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.week-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  text-align: left;
+  cursor: pointer;
+}
+
+.week-row:hover {
+  border-color: var(--border-strong);
+}
+
+.week-row.is-selected {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+.week-row-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.week-row-title {
+  font-weight: 600;
+}
+
+.week-row-total,
+.week-row-meta {
+  font-size: 12px;
+  color: var(--text-2);
+}
+
+.week-row-meta {
+  display: flex;
+  gap: 12px;
+}
+
+.week-row-meta:empty {
+  display: none;
+}
+
+.week-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.week-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.week-bar .tag {
+  width: 16px;
+  height: 16px;
+  font-size: 9px;
+}
+
+.week-bar-track {
+  flex: 1;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: var(--surface-sunk);
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+
+.week-bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: var(--tag);
+}
+
+.history-page {
+  min-width: 0;
+}
+
+@media (max-width: 1000px) {
+  .history-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 /* Backlog drawer */
@@ -756,6 +966,67 @@ select {
 .menu-day:disabled {
   opacity: 0.4;
   cursor: default;
+}
+
+.menu-due {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 34px;
+  padding: 2px 6px 2px 10px;
+}
+
+.menu-date {
+  flex: 1;
+  min-width: 0;
+  height: 28px;
+  padding: 0 6px;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  background: var(--surface);
+  font-size: 13px;
+}
+
+.menu-due-clear {
+  height: 28px;
+  padding: 0 8px;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  font-size: 13px;
+  color: var(--text-2);
+  cursor: pointer;
+}
+
+.menu-due-clear:hover,
+.menu-due-clear:focus-visible {
+  outline: none;
+  background: var(--surface-sunk);
+}
+
+/* Due-date labels in the backlog and on the page (screen colors). */
+.due-pill {
+  flex: none;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  background: var(--surface);
+  color: var(--text-2);
+  box-shadow: inset 0 0 0 1px var(--border-strong);
+}
+
+.due-soon {
+  background: var(--warning-bg);
+  color: var(--warning-text);
+  box-shadow: none;
+}
+
+.due-overdue {
+  background: var(--danger-bg);
+  color: var(--danger);
+  box-shadow: none;
 }
 
 .menu-toggles {

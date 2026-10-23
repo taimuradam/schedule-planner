@@ -6,11 +6,14 @@ import {
   goalMonthOf,
   monthName,
   nextWeekStart,
+  WEEKDAY_LETTER,
   WEEKDAY_LONG,
   WEEKDAYS,
 } from '../model/dates'
-import { currentWeek } from '../model/planner'
+import { currentWeek, plannerReducer, type Action } from '../model/planner'
+import type { CategoryId, HabitLog, Weekday } from '../model/types'
 import { usePlanner, usePlannerDispatch } from '../state/contexts'
+import { useSaveBackup } from '../state/useSaveBackup'
 import { STEPS, type Step } from './steps'
 import { CategoryTag, Icon, IconButton } from './ui'
 
@@ -43,6 +46,7 @@ export function PlanningSteps({
 
   const hints: Record<Exclude<Step, 'wrapup'>, string> = {
     goals: `These print at the top of every week in ${month}. Click a goal to change it, or a blank line to add one.`,
+    focus: 'Pick up to three things that would make this week a win. They print under your goals.',
     daily: 'Each gets a row of seven tick boxes. Click one to change it, or a blank line to add one.',
     days: "Drag tasks in from the backlog, or click a day's blank lines and type. Add #j, #s, #h or #p to set the category.",
     print: "That's the week. Print it and stick it on the fridge.",
@@ -102,15 +106,40 @@ export function PlanningSteps({
   )
 }
 
+const AUTO_BACKUP_KEY = 'weekly-planner:auto-backup'
+
+// Remembered per browser; on unless you've turned it off.
+function readAutoBackup(): boolean {
+  try {
+    return localStorage.getItem(AUTO_BACKUP_KEY) !== 'off'
+  } catch {
+    return true
+  }
+}
+
+function writeAutoBackup(on: boolean) {
+  try {
+    localStorage.setItem(AUTO_BACKUP_KEY, on ? 'on' : 'off')
+  } catch {
+    // Falls back to on next time.
+  }
+}
+
 /** Tick off what got done on paper; the rest rolls to the backlog. */
 function WrapUp({ onNext }: { onNext: () => void }) {
   const state = usePlanner()
   const dispatch = usePlannerDispatch()
   const editor = useEditor()
   const week = currentWeek(state)
-  const [done, setDone] = useState(() => new Set(week.tasks.filter((t) => t.done).map((t) => t.id)))
+  const [done, setDone] = useState(() => new Set([...week.tasks, ...week.focus].filter((t) => t.done).map((t) => t.id)))
+  const habitsToTick = state.dailyTasks.filter((t) => t.active)
+  const [habitDone, setHabitDone] = useState<Record<string, Weekday[]>>(() =>
+    Object.fromEntries((week.habits ?? []).map((h) => [h.id, h.done])),
+  )
   const [nextStart] = useState(() => nextWeekStart(week.start, new Date()))
   const rollingOver = week.tasks.filter((t) => !done.has(t.id) && !t.repeatingId).length
+  const saveBackup = useSaveBackup()
+  const [autoBackup, setAutoBackup] = useState(readAutoBackup)
 
   const toggle = (id: string) =>
     setDone((prev) => {
@@ -120,14 +149,43 @@ function WrapUp({ onNext }: { onNext: () => void }) {
       return next
     })
 
+  const toggleHabit = (id: string, day: Weekday) =>
+    setHabitDone((prev) => {
+      const days = prev[id] ?? []
+      return { ...prev, [id]: days.includes(day) ? days.filter((d) => d !== day) : [...days, day] }
+    })
+
   const startNextWeek = () => {
-    dispatch({ type: 'week/review', doneIds: [...done], nextStart })
+    // Habits are only recorded if you ticked any, so skipping this part
+    // doesn't read as a week where you did none of them.
+    const ticked = Object.values(habitDone).some((days) => days.length > 0)
+    const habits: HabitLog[] | undefined = ticked
+      ? habitsToTick.map((h) => ({
+          id: h.id,
+          text: h.text,
+          category: h.category,
+          days: h.days,
+          done: (habitDone[h.id] ?? []).filter((d) => h.days.includes(d)),
+        }))
+      : undefined
+    const review: Action = { type: 'week/review', doneIds: [...done], nextStart, habits }
+    // Back up the week that's about to start, so the file is as current as possible.
+    if (autoBackup) saveBackup(plannerReducer(state, review))
+    dispatch(review)
     editor.notify(
       `Started the week of ${formatWeekRange(nextStart)}. Unfinished tasks are at the top of the backlog.`,
       state,
     )
     onNext()
   }
+
+  const checkRow = (item: { id: string; text: string; category: CategoryId }) => (
+    <label key={item.id} className={`wrapup-task${done.has(item.id) ? ' is-done' : ''}`}>
+      <input type="checkbox" className="checkbox" checked={done.has(item.id)} onChange={() => toggle(item.id)} />
+      <CategoryTag id={item.category} />
+      <span>{item.text}</span>
+    </label>
+  )
 
   return (
     <div className="step-panel step-panel-wrapup">
@@ -141,35 +199,87 @@ function WrapUp({ onNext }: { onNext: () => void }) {
         </p>
       </div>
 
-      {week.tasks.length === 0 ? (
+      {week.tasks.length === 0 && week.focus.length === 0 ? (
         <p className="step-empty">Nothing was planned this week.</p>
       ) : (
         <div className="wrapup-days">
+          {week.focus.length > 0 && (
+            <div className="wrapup-day" role="group" aria-label="Top 3">
+              <h3 className="wrapup-legend">Top 3</h3>
+              {week.focus.map(checkRow)}
+            </div>
+          )}
           {WEEKDAYS.map((day) => {
             const tasks = week.tasks.filter((t) => t.day === day)
             if (tasks.length === 0) return null
             return (
-              <fieldset key={day} className="wrapup-day">
-                <legend>{WEEKDAY_LONG[day]}</legend>
-                {tasks.map((t) => (
-                  <label key={t.id} className={`wrapup-task${done.has(t.id) ? ' is-done' : ''}`}>
-                    <input
-                      type="checkbox"
-                      className="checkbox"
-                      checked={done.has(t.id)}
-                      onChange={() => toggle(t.id)}
-                    />
-                    <CategoryTag id={t.category} />
-                    <span>{t.text}</span>
-                  </label>
-                ))}
-              </fieldset>
+              <div key={day} className="wrapup-day" role="group" aria-label={WEEKDAY_LONG[day]}>
+                <h3 className="wrapup-legend">{WEEKDAY_LONG[day]}</h3>
+                {tasks.map(checkRow)}
+              </div>
             )
           })}
         </div>
       )}
 
+      {habitsToTick.length > 0 && (
+        <div className="wrapup-habits" role="group" aria-label="Every day">
+          <h3 className="wrapup-legend">Every day</h3>
+          <p className="step-hint">Optional: tick the habit boxes you filled in, to keep streaks in Past weeks.</p>
+          <table className="habit-grid">
+            <thead>
+              <tr>
+                <th />
+                {WEEKDAYS.map((d) => (
+                  <th key={d} scope="col">
+                    {WEEKDAY_LETTER[d]}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {habitsToTick.map((h) => (
+                <tr key={h.id}>
+                  <th scope="row">
+                    <CategoryTag id={h.category} /> {h.text}
+                  </th>
+                  {WEEKDAYS.map((d) => (
+                    <td key={d}>
+                      {h.days.includes(d) ? (
+                        <input
+                          type="checkbox"
+                          className="checkbox"
+                          aria-label={`${h.text} on ${WEEKDAY_LONG[d]}`}
+                          checked={(habitDone[h.id] ?? []).includes(d)}
+                          onChange={() => toggleHabit(h.id, d)}
+                        />
+                      ) : (
+                        <span className="habit-skip" aria-label={`Not done on ${WEEKDAY_LONG[d]}s`}>
+                          –
+                        </span>
+                      )}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
       <div className="step-actions">
+        <label className="backup-toggle">
+          <input
+            type="checkbox"
+            className="checkbox"
+            checked={autoBackup}
+            onChange={(e) => {
+              setAutoBackup(e.target.checked)
+              writeAutoBackup(e.target.checked)
+            }}
+          />
+          Download a backup
+        </label>
         <button type="button" className="button" onClick={onNext}>
           Keep planning this week
         </button>

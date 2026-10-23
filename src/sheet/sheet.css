@@ -130,6 +130,17 @@
   gap: 2.2em;
 }
 
+.sheet-left {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9em;
+}
+
+.sheet-row .sheet-row-text {
+  flex: 1;
+  min-width: 0;
+}
+
 .sheet-row {
   display: flex;
   align-items: center;
@@ -245,6 +256,18 @@
   margin-top: 0.05em;
 }
 
+.sheet-due {
+  margin-left: 0.4em;
+  font-size: 0.78em;
+  color: #666;
+  white-space: nowrap;
+}
+
+.sheet-due-overdue {
+  font-weight: 600;
+  color: #222;
+}
+
 .sheet-task-text {
   flex: 1;
   min-width: 0;
@@ -263,6 +286,28 @@
   border-bottom: 0.5pt solid var(--rule-faint);
 }
 
+/* Past weeks: what got done is ticked and crossed out. */
+.sheet-box.is-ticked {
+  position: relative;
+}
+
+.sheet-box.is-ticked::after {
+  content: '✓';
+  position: absolute;
+  left: 0.08em;
+  bottom: -0.05em;
+  font-size: 1.15em;
+  font-weight: 700;
+  line-height: 1;
+  color: #2f7a4a;
+}
+
+.sheet .is-done .sheet-task-text,
+.sheet .is-done .sheet-row-text {
+  color: #8a8a8a;
+  text-decoration: line-through;
+}
+
 .sheet-skip {
   color: #b0b0b0;
   line-height: 1;
@@ -275,7 +320,8 @@
 /* Printing: only the print copy of the sheet goes to paper. On screen it sits
    off to the side, invisible but still laid out so it can be measured. */
 
-.print-copy {
+.print-copy,
+.measure-copy {
   position: absolute;
   top: 0;
   left: -10000px;
@@ -297,5 +343,9 @@
   .print-copy {
     position: static;
     visibility: visible;
+  }
+
+  .measure-copy {
+    display: none;
   }
 }

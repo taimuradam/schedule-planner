@@ -14,16 +14,18 @@
     0 2px 16px rgb(0 0 0 / 0.08);
 }
 
-.sheet.is-editing {
-  --edit: #2c5aa0;
-  --edit-soft: #edf2fa;
-  --edit-hint: #8b95a5;
-
+.sheet.is-fluid {
   width: 100%;
   height: auto;
   aspect-ratio: 10.2 / 7.62;
   /* 10pt on a 10.2in-wide sheet, scaled to whatever width the page has. */
   font-size: calc(var(--fit, 1) * 1.3617cqw);
+}
+
+.sheet.is-editing {
+  --edit: #2c5aa0;
+  --edit-soft: #edf2fa;
+  --edit-hint: #8b95a5;
 }
 
 .sheet.is-editing button {
@@ -218,6 +220,15 @@
   opacity: 0.35;
 }
 
+/* The line showing where a dragged task will land. */
+.sheet-task.drop-before {
+  box-shadow: inset 0 2px 0 var(--edit);
+}
+
+.sheet-task.drop-after {
+  box-shadow: inset 0 -2px 0 var(--edit);
+}
+
 .repeat-mark {
   display: inline-flex;
   margin-left: 0.35em;
@@ -348,15 +359,34 @@ tr.is-hidden .sheet-box {
 }
 
 .sheet[data-focus='goals'] [data-section]:not([data-section='goals']),
+.sheet[data-focus='focus'] [data-section]:not([data-section='focus']),
 .sheet[data-focus='daily'] [data-section]:not([data-section='daily']),
 .sheet[data-focus='days'] [data-section]:not([data-section='days']) {
   opacity: 0.25;
 }
 
 .sheet[data-focus='goals'] [data-section='goals'],
+.sheet[data-focus='focus'] [data-section='focus'],
 .sheet[data-focus='daily'] [data-section='daily'],
 .sheet[data-focus='days'] [data-section='days'] {
   border-radius: 0.4em;
   outline: 2px solid #b7c9ea;
   outline-offset: 0.45em;
+}
+
+/* Due tags get color on screen; print stays gray. */
+.is-editing .sheet-due {
+  padding: 0 0.3em;
+  border-radius: 0.2em;
+  font-weight: 600;
+}
+
+.is-editing .sheet-due-soon {
+  background: #fbf0d9;
+  color: #6b4a0b;
+}
+
+.is-editing .sheet-due-overdue {
+  background: #fbe4e2;
+  color: #b3261e;
 }

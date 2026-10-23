@@ -88,6 +88,15 @@ export function formatDays(days: Weekday[]): string {
   return sorted.map((d) => WEEKDAY_SHORT[d]).join(', ')
 }
 
+/** "today", "yesterday", "3 days ago", "2 weeks ago" */
+export function formatSince(iso: string, now: Date): string {
+  const days = Math.floor((now.getTime() - new Date(iso).getTime()) / 86_400_000)
+  if (days <= 0) return 'today'
+  if (days === 1) return 'yesterday'
+  if (days < 14) return `${days} days ago`
+  return `${Math.floor(days / 7)} weeks ago`
+}
+
 /** "Oct 26" */
 export function formatShortDate(s: string): string {
   const d = parseISODate(s)
@@ -97,4 +106,19 @@ export function formatShortDate(s: string): string {
 /** Day of the month for a weekday in the given week. */
 export function dayOfMonth(weekStart: string, day: Weekday): number {
   return parseISODate(addDays(weekStart, day)).getDate()
+}
+
+export type DueTone = 'overdue' | 'soon' | 'later'
+
+/**
+ * How to label a due date: "overdue" once it's passed, the weekday if it's in
+ * the week being planned, otherwise the date. `on` is the day the task sits
+ * on, if it's on one; due that same day it just says "due".
+ */
+export function dueLabel(due: string, weekStart: string, today: Date, on?: string): { text: string; tone: DueTone } {
+  if (on && due === on) return { text: 'due', tone: 'soon' }
+  if (due < toISODate(today) || (on && due < on)) return { text: 'overdue', tone: 'overdue' }
+  const day = (parseISODate(due).getDay() + 6) % 7
+  if (due >= weekStart && due <= addDays(weekStart, 6)) return { text: `due ${WEEKDAY_SHORT[day]}`, tone: 'soon' }
+  return { text: `due ${formatShortDate(due)}`, tone: 'later' }
 }

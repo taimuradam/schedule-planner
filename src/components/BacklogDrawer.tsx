@@ -1,8 +1,10 @@
 import { useDraggable, useDroppable } from '@dnd-kit/core'
+import { useState } from 'react'
 import { LineEditor } from '../editor/LineEditor'
 import { MoreButton } from '../editor/Menu'
 import { BacklogMenu } from '../editor/menus'
 import { CATEGORIES } from '../model/categories'
+import { dueLabel } from '../model/dates'
 import { newId } from '../model/planner'
 import type { BacklogItem } from '../model/types'
 import { useLine, type DragData } from '../sheet/lines'
@@ -10,6 +12,14 @@ import { usePlanner, usePlannerDispatch } from '../state/contexts'
 import { CategoryTag, Icon, IconButton } from './ui'
 
 export const BACKLOG_DROP = 'backlog'
+
+/** Items with a due date first, soonest at the top; the rest keep their order. */
+function byDueDate(a: BacklogItem, b: BacklogItem): number {
+  if (a.due === b.due) return 0
+  if (!a.due) return 1
+  if (!b.due) return -1
+  return a.due < b.due ? -1 : 1
+}
 
 /** Tasks without a day yet. Slides in beside the page so you can drag from it. */
 export function BacklogDrawer({ onClose }: { onClose: () => void }) {
@@ -41,7 +51,10 @@ export function BacklogDrawer({ onClose }: { onClose: () => void }) {
       </div>
       <div className="drawer-groups">
         {CATEGORIES.map((c) => {
-          const items = state.backlog.filter((b) => b.category === c.id)
+          // Anything with a due date comes first, soonest at the top.
+          const items = state.backlog
+            .filter((b) => b.category === c.id)
+            .sort(byDueDate)
           return (
             <section key={c.id} className="drawer-group">
               <h3 className="drawer-group-head">
@@ -53,7 +66,7 @@ export function BacklogDrawer({ onClose }: { onClose: () => void }) {
               ) : (
                 <ul className="drawer-list">
                   {items.map((b) => (
-                    <BacklogLine key={b.id} item={b} />
+                    <BacklogLine key={b.id} item={b} weekStart={state.currentWeek} />
                   ))}
                 </ul>
               )}
@@ -65,9 +78,11 @@ export function BacklogDrawer({ onClose }: { onClose: () => void }) {
   )
 }
 
-function BacklogLine({ item }: { item: BacklogItem }) {
+function BacklogLine({ item, weekStart }: { item: BacklogItem; weekStart: string }) {
   const dispatch = usePlannerDispatch()
   const line = useLine()
+  const [today] = useState(() => new Date())
+  const due = item.due ? dueLabel(item.due, weekStart, today) : null
   const { setNodeRef, listeners, isDragging } = useDraggable({
     id: `backlog:${item.id}`,
     data: { kind: 'backlog', id: item.id, text: item.text, category: item.category } satisfies DragData,
@@ -106,6 +121,7 @@ function BacklogLine({ item }: { item: BacklogItem }) {
         <button type="button" className="line-text" onClick={line.startRename}>
           {item.text}
         </button>
+        {due && <span className={`due-pill due-${due.tone}`}>{due.text}</span>}
         {item.carriedOver && (
           <span className="carried-mark" title="Not finished last week">
             <Icon name="carried" size={13} />

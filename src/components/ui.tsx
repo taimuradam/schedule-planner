@@ -20,6 +20,8 @@ const ICONS = {
   list: 'M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01',
   download: 'M12 4v11M7 10l5 5 5-5M5 20h14',
   upload: 'M12 20V9M7 14l5-5 5 5M5 4h14',
+  calendar: 'M7 3v3M17 3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z',
+  history: 'M3 12a9 9 0 1 0 3-6.7M3 4v5h5M12 7v5l3 2',
   arrowLeft: 'M19 12H5M11 6l-6 6 6 6',
   arrowRight: 'M5 12h14M13 6l6 6-6 6',
 }

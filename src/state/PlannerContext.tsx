@@ -1,11 +1,14 @@
 import { useEffect, useReducer, useState, type ReactNode } from 'react'
 import { createInitialState, plannerReducer } from '../model/planner'
-import { loadState, saveState } from '../model/storage'
-import { DispatchContext, SaveErrorContext, StateContext } from './contexts'
+import { loadState, requestPersistentStorage, saveState } from '../model/storage'
+import { DispatchContext, StateContext, StorageStatusContext } from './contexts'
 
 export function PlannerProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(plannerReducer, null, () => loadState() ?? createInitialState(new Date()))
+  const [loaded] = useState(loadState)
+  const [state, dispatch] = useReducer(plannerReducer, null, () => loaded.state ?? createInitialState(new Date()))
   const [saveFailed, setSaveFailed] = useState(false)
+
+  useEffect(requestPersistentStorage, [])
 
   // Every change is saved straight to the browser.
   useEffect(() => {
@@ -15,7 +18,7 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
   return (
     <StateContext value={state}>
       <DispatchContext value={dispatch}>
-        <SaveErrorContext value={saveFailed}>{children}</SaveErrorContext>
+        <StorageStatusContext value={{ saveFailed, unreadable: loaded.unreadable }}>{children}</StorageStatusContext>
       </DispatchContext>
     </StateContext>
   )

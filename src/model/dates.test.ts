@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   addDays,
   dayOfMonth,
+  dueLabel,
   formatWeekRange,
   goalMonthOf,
   mondayOf,
@@ -62,5 +63,23 @@ describe('labels', () => {
   it('gives the day of the month for each weekday', () => {
     expect(dayOfMonth('2026-10-26', 0)).toBe(26)
     expect(dayOfMonth('2026-10-26', 6)).toBe(1)
+  })
+})
+
+describe('dueLabel', () => {
+  const thursday = day(2026, 10, 22)
+
+  it('says overdue once the date has passed', () => {
+    expect(dueLabel('2026-10-21', '2026-10-19', thursday)).toEqual({ text: 'overdue', tone: 'overdue' })
+  })
+
+  it('names the weekday within the week being planned, and the date beyond it', () => {
+    expect(dueLabel('2026-10-23', '2026-10-19', thursday)).toEqual({ text: 'due Fri', tone: 'soon' })
+    expect(dueLabel('2026-10-30', '2026-10-19', thursday)).toEqual({ text: 'due Oct 30', tone: 'later' })
+  })
+
+  it('reads from the day a task sits on', () => {
+    expect(dueLabel('2026-10-23', '2026-10-19', thursday, '2026-10-23')).toEqual({ text: 'due', tone: 'soon' })
+    expect(dueLabel('2026-10-23', '2026-10-19', thursday, '2026-10-24')).toEqual({ text: 'overdue', tone: 'overdue' })
   })
 })

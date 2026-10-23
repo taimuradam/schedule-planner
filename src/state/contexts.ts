@@ -2,9 +2,16 @@ import { createContext, useContext, type Dispatch } from 'react'
 import type { Action } from '../model/planner'
 import type { PlannerState } from '../model/types'
 
+export interface StorageStatus {
+  /** The browser refused the last save. */
+  saveFailed: boolean
+  /** Saved data that couldn't be read when the planner opened, kept aside. */
+  unreadable: string | null
+}
+
 export const StateContext = createContext<PlannerState | null>(null)
 export const DispatchContext = createContext<Dispatch<Action> | null>(null)
-export const SaveErrorContext = createContext(false)
+export const StorageStatusContext = createContext<StorageStatus>({ saveFailed: false, unreadable: null })
 
 export function usePlanner(): PlannerState {
   const state = useContext(StateContext)
@@ -18,6 +25,6 @@ export function usePlannerDispatch(): Dispatch<Action> {
   return dispatch
 }
 
-export function useSaveFailed(): boolean {
-  return useContext(SaveErrorContext)
+export function useStorageStatus(): StorageStatus {
+  return useContext(StorageStatusContext)
 }

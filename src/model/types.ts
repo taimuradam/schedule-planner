@@ -42,6 +42,8 @@ export interface BacklogItem {
   category: CategoryId
   /** Rolled over unfinished from a reviewed week. */
   carriedOver: boolean
+  /** YYYY-MM-DD it's due. Only a hint; it never moves the item. */
+  due?: string
 }
 
 export interface DayTask {
@@ -55,6 +57,29 @@ export interface DayTask {
   repeatingId?: string
   /** Shared by copies of the same task on different days of one week. */
   groupId?: string
+  /** YYYY-MM-DD it's due, carried over from the backlog. */
+  due?: string
+  /** Dragged into its spot by hand, so it stays put instead of sitting with its category. */
+  placed?: boolean
+}
+
+/** One of the week's top three priorities, printed under the monthly goals. */
+export interface FocusItem {
+  id: string
+  text: string
+  category: CategoryId
+  done: boolean
+}
+
+/** How a habit went in a reviewed week, kept whole so history survives later edits. */
+export interface HabitLog {
+  id: string
+  text: string
+  category: CategoryId
+  /** Days it was meant to be done. */
+  days: Weekday[]
+  /** Days it was ticked off on paper. */
+  done: Weekday[]
 }
 
 export interface Week {
@@ -62,6 +87,9 @@ export interface Week {
   start: string
   tasks: DayTask[]
   reviewed: boolean
+  focus: FocusItem[]
+  /** Recorded during the review; missing if habits weren't ticked off. */
+  habits?: HabitLog[]
 }
 
 export interface PlannerState {
@@ -73,4 +101,6 @@ export interface PlannerState {
   weeks: Record<string, Week>
   /** Start of the week being planned and printed. */
   currentWeek: string
+  /** When a backup file was last saved (ISO date-time). */
+  lastBackupAt?: string
 }

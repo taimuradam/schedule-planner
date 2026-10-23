@@ -1,4 +1,5 @@
 import { isCategoryId } from './categories'
+import { groupByCategory } from './planner'
 import type { PlannerState, Week } from './types'
 
 const STORAGE_KEY = 'weekly-planner:v1'
@@ -31,15 +32,16 @@ function readDaily(v: unknown): Obj | null {
   return Array.isArray(v.days) && v.days.length > 0 && v.days.every(isWeekday) ? v : null
 }
 
-function isWeek(v: unknown): v is Week {
-  return (
-    isObj(v) &&
-    isStr(v.start) &&
-    DATE_RE.test(v.start) &&
-    typeof v.reviewed === 'boolean' &&
-    Array.isArray(v.tasks) &&
-    v.tasks.every((t) => isItem(t) && isWeekday(t.day) && typeof t.done === 'boolean')
-  )
+const isDone = (v: unknown) => isItem(v) && typeof v.done === 'boolean'
+
+/** Weeks saved before the top 3 existed get an empty one. */
+function readWeek(v: unknown): Week | null {
+  if (!isObj(v) || !isStr(v.start) || !DATE_RE.test(v.start) || typeof v.reviewed !== 'boolean') return null
+  if (!Array.isArray(v.tasks) || !v.tasks.every((t) => isDone(t) && isWeekday((t as Obj).day))) return null
+  const focus = v.focus ?? []
+  if (!Array.isArray(focus) || !focus.every(isDone)) return null
+  if (v.habits !== undefined && !(Array.isArray(v.habits) && v.habits.every(isItem))) return null
+  return { ...v, focus } as unknown as Week
 }
 
 /**
@@ -55,18 +57,51 @@ export function parseState(raw: unknown): PlannerState | null {
   const rules = Array.isArray(repeating) ? repeating.map(readRepeating) : [null]
   if (rules.some((r) => r === null)) return null
   if (!Array.isArray(backlog) || !backlog.every(isItem)) return null
-  if (!isObj(weeks) || !Object.values(weeks).every(isWeek)) return null
+  if (!isObj(weeks)) return null
+  const readWeeks: Record<string, Week> = {}
+  for (const [start, week] of Object.entries(weeks)) {
+    const read = readWeek(week)
+    if (!read) return null
+    // Days you haven't arranged by hand are kept grouped by category.
+    readWeeks[start] = read.reviewed ? read : groupByCategory(read)
+  }
   if (!isStr(currentWeek) || !(currentWeek in weeks)) return null
-  return { ...raw, dailyTasks: daily, repeating: rules } as unknown as PlannerState
+  return { ...raw, dailyTasks: daily, repeating: rules, weeks: readWeeks } as unknown as PlannerState
 }
 
-export function loadState(): PlannerState | null {
+export interface Loaded {
+  state: PlannerState | null
+  /** Saved data that couldn't be read. It's kept, never overwritten. */
+  unreadable: string | null
+}
+
+export function loadState(): Loaded {
+  let text: string | null = null
   try {
-    const text = localStorage.getItem(STORAGE_KEY)
-    return text ? parseState(JSON.parse(text)) : null
+    text = localStorage.getItem(STORAGE_KEY)
   } catch {
-    return null
+    return { state: null, unreadable: null }
   }
+  if (!text) return { state: null, unreadable: null }
+  let state: PlannerState | null = null
+  try {
+    state = parseState(JSON.parse(text))
+  } catch {
+    state = null
+  }
+  if (state) return { state, unreadable: null }
+  // Starting fresh will save over the main key, so put the old data aside first.
+  try {
+    localStorage.setItem(`${STORAGE_KEY}:unreadable:${Date.now()}`, text)
+  } catch {
+    // Still offered as a download below.
+  }
+  return { state: null, unreadable: text }
+}
+
+/** Asks the browser not to clear the planner's storage to free up space. */
+export function requestPersistentStorage(): void {
+  void navigator.storage?.persist?.().catch(() => undefined)
 }
 
 export function saveState(state: PlannerState): boolean {
@@ -78,14 +113,18 @@ export function saveState(state: PlannerState): boolean {
   }
 }
 
-export function downloadBackup(state: PlannerState): void {
-  const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' })
+export function downloadFile(name: string, text: string): void {
+  const blob = new Blob([text], { type: 'application/json' })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
-  a.download = `weekly-planner-${state.currentWeek}.json`
+  a.download = name
   a.click()
   URL.revokeObjectURL(url)
+}
+
+export function downloadBackup(state: PlannerState): void {
+  downloadFile(`weekly-planner-${state.currentWeek}.json`, JSON.stringify(state, null, 2))
 }
 
 export async function readBackup(file: File): Promise<PlannerState | null> {

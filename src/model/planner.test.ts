@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createInitialState, currentGoals, currentWeek, plannerReducer, type Action } from './planner'
+import { createInitialState, currentGoals, currentWeek, groupByCategory, plannerReducer, type Action } from './planner'
 import type { PlannerState } from './types'
 
 const WEEK = '2026-10-19'
@@ -82,6 +82,101 @@ describe('repeating tasks', () => {
     const state = plannerReducer(repeating(), { type: 'task/stopRepeat', id: 't1' })
     expect(state.repeating).toEqual([])
     expect(currentWeek(state).tasks).toMatchObject([{ id: 't1', text: 'PS due', repeatingId: undefined }])
+  })
+})
+
+describe('order within a day', () => {
+  const texts = (state: PlannerState, day: number) => tasksOn(state, day).join(', ')
+  const mixed = () =>
+    run([
+      { type: 'task/add', id: 'gym', day: 0, text: 'Gym', category: 'personal' },
+      { type: 'task/add', id: 'ps', day: 0, text: 'PS5', category: 'school' },
+      { type: 'task/add', id: 'apply', day: 0, text: 'Apply', category: 'job' },
+      { type: 'task/add', id: 'repo', day: 0, text: 'Repo', category: 'side' },
+      { type: 'task/add', id: 'chat', day: 0, text: 'Coffee chat', category: 'job' },
+    ])
+
+  it('groups new tasks by category, oldest first within each', () => {
+    expect(texts(mixed(), 0)).toBe('Apply, Coffee chat, Repo, PS5, Gym')
+  })
+
+  it('keeps a task where you drag it, even as more are added', () => {
+    let state = plannerReducer(mixed(), { type: 'task/place', id: 'gym', day: 0, beforeId: 'apply' })
+    expect(texts(state, 0)).toBe('Gym, Apply, Coffee chat, Repo, PS5')
+    state = plannerReducer(state, { type: 'task/add', id: 'cv', day: 0, text: 'CV', category: 'job' })
+    expect(texts(state, 0)).toBe('Gym, Apply, Coffee chat, CV, Repo, PS5')
+  })
+
+  it('places at the end of another day', () => {
+    const state = plannerReducer(mixed(), { type: 'task/place', id: 'apply', day: 1, beforeId: null })
+    expect(texts(state, 1)).toBe('Apply')
+    expect(texts(state, 0)).toBe('Coffee chat, Repo, PS5, Gym')
+  })
+
+  it('moves an unplaced task to its new category when recategorised, but not a placed one', () => {
+    let state = plannerReducer(mixed(), { type: 'task/update', id: 'gym', patch: { category: 'job' } })
+    expect(texts(state, 0)).toBe('Apply, Coffee chat, Gym, Repo, PS5')
+    state = plannerReducer(state, { type: 'task/place', id: 'repo', day: 0, beforeId: 'apply' })
+    state = plannerReducer(state, { type: 'task/update', id: 'repo', patch: { category: 'personal' } })
+    expect(texts(state, 0)).toBe('Repo, Apply, Coffee chat, Gym, PS5')
+  })
+
+  it('joins its category when dropped on a day as a whole, or from the backlog', () => {
+    let state = plannerReducer(mixed(), { type: 'task/add', id: 'read', day: 1, text: 'Read', category: 'school' })
+    state = plannerReducer(state, { type: 'task/move', id: 'read', day: 0 })
+    expect(texts(state, 0)).toBe('Apply, Coffee chat, Repo, PS5, Read, Gym')
+    state = plannerReducer(state, { type: 'backlog/add', id: 'b', text: 'Deploy', category: 'side' })
+    state = plannerReducer(state, { type: 'backlog/schedule', id: 'b', day: 0 })
+    expect(texts(state, 0)).toBe('Apply, Coffee chat, Repo, Deploy, PS5, Read, Gym')
+  })
+
+  it('groups older saved days that were never arranged by hand', () => {
+    const week = currentWeek(mixed())
+    const shuffled = { ...week, tasks: [...week.tasks].reverse() }
+    // Categories are sorted; order within a category is left as it was.
+    expect(groupByCategory(shuffled).tasks.map((t) => t.text)).toEqual(['Coffee chat', 'Apply', 'Repo', 'PS5', 'Gym'])
+    const arranged = { ...shuffled, tasks: shuffled.tasks.map((t, i) => (i === 0 ? { ...t, placed: true } : t)) }
+    expect(groupByCategory(arranged).tasks).toEqual(arranged.tasks)
+  })
+})
+
+describe('due dates', () => {
+  it('travel with an item from the backlog to a day and back', () => {
+    let state = run([
+      { type: 'backlog/add', id: 'b', text: 'PS5', category: 'school' },
+      { type: 'backlog/update', id: 'b', patch: { due: '2026-10-29' } },
+      { type: 'backlog/schedule', id: 'b', day: 1 },
+    ])
+    expect(currentWeek(state).tasks[0].due).toBe('2026-10-29')
+    state = plannerReducer(state, { type: 'task/unschedule', id: 'b' })
+    expect(state.backlog[0].due).toBe('2026-10-29')
+  })
+
+  it('stay on unfinished tasks that roll over, and never reach a weekly rule', () => {
+    let state = run([
+      { type: 'task/add', id: 't', day: 1, text: 'PS5', category: 'school' },
+      { type: 'task/repeat', id: 't', repeatingId: 'r' },
+      { type: 'task/update', id: 't', patch: { due: '2026-10-29' } },
+    ])
+    expect(state.repeating[0]).not.toHaveProperty('due')
+    state = plannerReducer(state, { type: 'task/stopRepeat', id: 't' })
+    state = plannerReducer(state, { type: 'week/review', doneIds: [], nextStart: '2026-10-26' })
+    expect(state.backlog[0]).toMatchObject({ text: 'PS5', due: '2026-10-29', carriedOver: true })
+  })
+})
+
+describe('top 3 this week', () => {
+  it('holds three at most, and is recorded in the review', () => {
+    let state = run([
+      { type: 'focus/add', id: 'a', text: 'Finish PS5', category: 'school' },
+      { type: 'focus/add', id: 'b', text: 'Apply to Stripe', category: 'job' },
+      { type: 'focus/add', id: 'c', text: 'Deploy MVP', category: 'side' },
+      { type: 'focus/add', id: 'd', text: 'One too many', category: 'side' },
+    ])
+    expect(currentWeek(state).focus.map((f) => f.text)).toEqual(['Finish PS5', 'Apply to Stripe', 'Deploy MVP'])
+    state = plannerReducer(state, { type: 'week/review', doneIds: ['b'], nextStart: '2026-10-26' })
+    expect(state.weeks[WEEK].focus.map((f) => f.done)).toEqual([false, true, false])
+    expect(currentWeek(state).focus).toEqual([])
   })
 })
 

@@ -11,3 +11,8 @@ createRoot(document.getElementById('root')!).render(
     </PlannerProvider>
   </StrictMode>,
 )
+
+// Only the built site gets the offline cache; in development it would serve stale files.
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  void navigator.serviceWorker.register('/sw.js')
+}

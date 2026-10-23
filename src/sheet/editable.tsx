@@ -2,17 +2,17 @@
 // the "⋯" menus, and dragging. None of this is rendered in the printout.
 
 import { useDraggable, useDroppable } from '@dnd-kit/core'
-import { useState } from 'react'
+import { useContext, useState } from 'react'
 import { Icon } from '../components/ui'
 import { LineEditor } from '../editor/LineEditor'
 import { MoreButton } from '../editor/Menu'
-import { DailyMenu, GoalMenu, TaskMenu } from '../editor/menus'
+import { DailyMenu, FocusMenu, GoalMenu, TaskMenu } from '../editor/menus'
 import { formatDays, monthName, previousMonth, WEEKDAY_LONG } from '../model/dates'
-import { goalsForMonth, newId } from '../model/planner'
-import type { CategoryId, DailyTask, DayTask, Goal, Weekday } from '../model/types'
+import { FOCUS_LIMIT, currentWeek, goalsForMonth, newId } from '../model/planner'
+import type { CategoryId, DailyTask, DayTask, FocusItem, Goal, Weekday } from '../model/types'
 import { usePlanner, usePlannerDispatch } from '../state/contexts'
-import { blanks, BLANK_DAY_LINES, dayDropId, useLine, type DragData } from './lines'
-import { Box, BoxCells, DayHead, Tag } from './parts'
+import { blanks, BLANK_DAY_LINES, dayDropId, DropSpotContext, slotDropId, useLine, type DragData } from './lines'
+import { Box, BoxCells, DayHead, DueTag, Tag } from './parts'
 
 /** Writes the line only if something actually changed. */
 function changed(item: { text: string; category: CategoryId }, text: string, category: CategoryId) {
@@ -103,6 +103,63 @@ export function AddGoalLine({ month, onClose }: { month: string; onClose: () => 
         label={`New ${monthName(month)} goal`}
         placeholder="Land 5 first-round interviews"
         onSubmit={(text, category) => dispatch({ type: 'goal/add', id: newId(), month, text, category })}
+        onClose={onClose}
+      />
+    </li>
+  )
+}
+
+export function EditableFocus({ item }: { item: FocusItem }) {
+  const dispatch = usePlannerDispatch()
+  const line = useLine()
+
+  if (line.renaming) {
+    return (
+      <li className="sheet-row is-writing">
+        <LineEditor
+          initialText={item.text}
+          initialCategory={item.category}
+          label="Edit priority"
+          placeholder="Priority"
+          onSubmit={(text, category) => {
+            if (changed(item, text, category))
+              dispatch({ type: 'focus/update', id: item.id, patch: { text, category } })
+          }}
+          onClose={line.stopRename}
+        />
+      </li>
+    )
+  }
+
+  return (
+    <>
+      <li className="sheet-row is-editable" onContextMenu={line.onContextMenu}>
+        <Box />
+        <button type="button" className="line-text" onClick={line.startRename}>
+          {item.text}
+        </button>
+        <Tag id={item.category} />
+        <MoreButton label={`Options for ${item.text}`} open={Boolean(line.menuAnchor)} onOpen={line.openMenu} />
+      </li>
+      {line.menuAnchor && (
+        <FocusMenu item={item} anchor={line.menuAnchor} onClose={line.closeMenu} onRename={line.startRename} />
+      )}
+    </>
+  )
+}
+
+export function AddFocusLine({ onClose }: { onClose: () => void }) {
+  const state = usePlanner()
+  const dispatch = usePlannerDispatch()
+  // Stops offering another line once the third priority is in.
+  const room = FOCUS_LIMIT - currentWeek(state).focus.length
+  return (
+    <li className="sheet-row is-writing">
+      <LineEditor
+        repeat={room > 1}
+        label="New priority for this week"
+        placeholder="Finish problem set 5"
+        onSubmit={(text, category) => dispatch({ type: 'focus/add', id: newId(), text, category })}
         onClose={onClose}
       />
     </li>
@@ -226,6 +283,9 @@ function EditableTask({ task }: { task: DayTask }) {
     data: { kind: 'task', id: task.id, text: task.text, category: task.category } satisfies DragData,
     disabled: line.renaming,
   })
+  const { setNodeRef: setDropRef } = useDroppable({ id: slotDropId(task.id) })
+  const spot = useContext(DropSpotContext)
+  const dropClass = spot?.taskId === task.id ? (spot.before ? ' drop-before' : ' drop-after') : ''
 
   if (line.renaming) {
     return (
@@ -250,17 +310,21 @@ function EditableTask({ task }: { task: DayTask }) {
   return (
     <>
       <li
-        ref={setNodeRef}
-        className={`sheet-task is-editable${isDragging ? ' is-dragging' : ''}`}
+        ref={(el) => {
+          setNodeRef(el)
+          setDropRef(el)
+        }}
+        className={`sheet-task is-editable${isDragging ? ' is-dragging' : ''}${dropClass}`}
         onContextMenu={line.onContextMenu}
         {...listeners}
       >
-        <span className="drag-box" title="Drag to another day">
+        <span className="drag-box" title="Drag to move it, here or to another day">
           <Box />
           <Icon name="grip" size={12} />
         </span>
         <button type="button" className="sheet-task-text line-text" onClick={line.startRename}>
           {task.text}
+          <DueTag due={task.due} day={task.day} />
           {task.repeatingId && (
             <span className="repeat-mark" title={`Repeats every ${formatDays(repeatDays)}`}>
               <Icon name="repeat" size={11} />
