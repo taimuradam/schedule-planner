@@ -15,6 +15,11 @@ describe('parseState', () => {
     expect(parseState(JSON.parse(JSON.stringify(state)))).toEqual(state)
   })
 
+  it('reads repeating tasks saved with a single weekday', () => {
+    const old = { ...valid(), repeating: [{ id: 'r1', weekday: 3, text: 'PS due', category: 'school' }] }
+    expect(parseState(old)?.repeating).toEqual([{ id: 'r1', weekdays: [3], text: 'PS due', category: 'school' }])
+  })
+
   it('rejects things that are not planner data', () => {
     expect(parseState(null)).toBeNull()
     expect(parseState([])).toBeNull()
@@ -25,7 +30,9 @@ describe('parseState', () => {
   it('rejects data with broken items', () => {
     const state = valid()
     expect(parseState({ ...state, goals: [{ id: 'x', text: 'No month', category: 'job' }] })).toBeNull()
-    expect(parseState({ ...state, dailyTasks: [{ id: 'x', text: 'Bad', category: 'chores', active: true }] })).toBeNull()
+    expect(
+      parseState({ ...state, dailyTasks: [{ id: 'x', text: 'Bad', category: 'chores', active: true }] }),
+    ).toBeNull()
     expect(parseState({ ...state, currentWeek: '2030-01-07' })).toBeNull()
   })
 })

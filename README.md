@@ -22,9 +22,10 @@ Then open http://localhost:5173 in your browser.
 The screen shows the page exactly as it will print. You edit right on it:
 
 - **Click any blank line to write on it.** Press Enter to save and start the next line, or Escape to stop.
-- **Set the category as you type** by clicking J, S or H, or by typing `#j`, `#s` or `#h`. New lines use whichever category you picked last.
-- **Click any text to change it.** Hover over a line and click **⋯** (or right-click it) to change its category, repeat it every week, move it to another day, or delete it.
-- **Drag tasks** between days, or to and from the **Backlog** drawer.
+- **The category is guessed as you type.** The guess comes from keywords like "resume", "deploy" or "midterm" and from how you've filed similar lines before. A guessed category has a dashed outline; click J, S or H, or type `#j`, `#s` or `#h`, to pick a different one.
+- **Click any text to change it.** Hover over a line and click **⋯** (or right-click it) to change its category, repeat it every week, send it back to the backlog, or delete it.
+- **Put a task on several days** by ticking days under "On these days" in its **⋯** menu. The copies stay linked: renaming one renames them all, and "Repeat every Mon, Wed, Fri" brings the whole set back each week.
+- **Drag tasks** between days, or to and from the **Backlog** drawer. Hold **⌥ Option** while you drop to put a copy on that day instead of moving it.
 
 ## The Sunday routine
 

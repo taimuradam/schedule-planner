@@ -330,6 +330,11 @@ tr.is-hidden .sheet-box {
   background: var(--tag-bg);
 }
 
+/* A guessed category: dashed until you confirm or change it. */
+.chip.is-guess {
+  border-style: dashed;
+}
+
 /* Sunday steps: dim the parts of the page you aren't working on. */
 
 .sheet[data-focus] [data-section] {

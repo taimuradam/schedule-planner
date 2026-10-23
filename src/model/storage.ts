@@ -15,6 +15,15 @@ function isItem(v: unknown): v is Obj {
   return isObj(v) && isStr(v.id) && isStr(v.text) && isCategoryId(v.category)
 }
 
+/** Repeating tasks used to have a single `weekday`; read those as one-day lists. */
+function readRepeating(v: unknown): Obj | null {
+  if (!isItem(v)) return null
+  if (Array.isArray(v.weekdays) && v.weekdays.every(isWeekday)) return v
+  if (!isWeekday(v.weekday)) return null
+  const { weekday, ...rest } = v
+  return { ...rest, weekdays: [weekday] }
+}
+
 function isWeek(v: unknown): v is Week {
   return (
     isObj(v) &&
@@ -35,11 +44,12 @@ export function parseState(raw: unknown): PlannerState | null {
   const { goals, dailyTasks, repeating, backlog, weeks, currentWeek } = raw
   if (!Array.isArray(goals) || !goals.every((g) => isItem(g) && isStr(g.month) && MONTH_RE.test(g.month))) return null
   if (!Array.isArray(dailyTasks) || !dailyTasks.every((t) => isItem(t) && typeof t.active === 'boolean')) return null
-  if (!Array.isArray(repeating) || !repeating.every((r) => isItem(r) && isWeekday(r.weekday))) return null
+  const rules = Array.isArray(repeating) ? repeating.map(readRepeating) : [null]
+  if (rules.some((r) => r === null)) return null
   if (!Array.isArray(backlog) || !backlog.every(isItem)) return null
   if (!isObj(weeks) || !Object.values(weeks).every(isWeek)) return null
   if (!isStr(currentWeek) || !(currentWeek in weeks)) return null
-  return raw as unknown as PlannerState
+  return { ...raw, repeating: rules } as unknown as PlannerState
 }
 
 export function loadState(): PlannerState | null {

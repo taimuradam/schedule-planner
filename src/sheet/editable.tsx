@@ -7,7 +7,7 @@ import { Icon } from '../components/ui'
 import { LineEditor } from '../editor/LineEditor'
 import { MoreButton } from '../editor/Menu'
 import { DailyMenu, GoalMenu, TaskMenu } from '../editor/menus'
-import { monthName, previousMonth, WEEKDAY_LONG } from '../model/dates'
+import { formatDays, monthName, previousMonth, WEEKDAY_LONG } from '../model/dates'
 import { goalsForMonth, newId } from '../model/planner'
 import type { CategoryId, DailyTask, DayTask, Goal, Weekday } from '../model/types'
 import { usePlanner, usePlannerDispatch } from '../state/contexts'
@@ -215,7 +215,9 @@ export function EditableDay({ day, date, tasks }: { day: Weekday; date: number; 
 }
 
 function EditableTask({ task }: { task: DayTask }) {
+  const state = usePlanner()
   const dispatch = usePlannerDispatch()
+  const repeatDays = state.repeating.find((r) => r.id === task.repeatingId)?.weekdays ?? [task.day]
   const line = useLine()
   // The whole row drags (after a few pixels of movement), so a plain click
   // on the text still means "edit".
@@ -260,7 +262,7 @@ function EditableTask({ task }: { task: DayTask }) {
         <button type="button" className="sheet-task-text line-text" onClick={line.startRename}>
           {task.text}
           {task.repeatingId && (
-            <span className="repeat-mark" title={`Repeats every ${WEEKDAY_LONG[task.day]}`}>
+            <span className="repeat-mark" title={`Repeats every ${formatDays(repeatDays)}`}>
               <Icon name="repeat" size={11} />
             </span>
           )}

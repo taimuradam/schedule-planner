@@ -6,8 +6,9 @@ import { useEditor } from './editorContext'
 
 /**
  * One text field for writing a line, with J/S/H chips to set its category.
- * Typing #j, #s or #h sets the category from the keyboard. Enter saves,
- * Escape cancels, and clicking away saves whatever was typed.
+ * New lines guess the category from the text (shown dashed) until you pick
+ * one with a chip or type #j, #s or #h. Enter saves, Escape cancels, and
+ * clicking away saves whatever was typed.
  */
 export function LineEditor({
   initialText = '',
@@ -34,20 +35,24 @@ export function LineEditor({
 }) {
   const editor = useEditor()
   const [text, setText] = useState(initialText)
-  const [cat, setCat] = useState<CategoryId>(initialCategory ?? editor.lastCategory)
+  // Set once you pick a category yourself; until then it's guessed as you type.
+  const [chosen, setChosen] = useState<CategoryId | null>(initialCategory ?? null)
+  const auto = chosen === null
+  const cat = chosen ?? editor.guess(text) ?? editor.lastCategory
   const inputRef = useRef<HTMLInputElement>(null)
   // Set once the editor has saved or cancelled, so the blur that follows
   // (focus leaving a field that's going away) doesn't save a second time.
   const finished = useRef(false)
 
   const choose = (c: CategoryId) => {
-    setCat(c)
+    setChosen(c)
     editor.setLastCategory(c)
   }
 
   const close = () => {
     if (persistent) {
       setText('')
+      setChosen(null)
       return
     }
     finished.current = true
@@ -62,8 +67,9 @@ export function LineEditor({
       editor.setLastCategory(category)
     }
     if (parsed.text && keepOpen) {
+      // The next line starts fresh and guesses for itself.
       setText('')
-      setCat(category)
+      setChosen(null)
       return
     }
     close()
@@ -97,15 +103,17 @@ export function LineEditor({
           if (!persistent && !finished.current) commit(false)
         }}
       />
-      <span className="chips" role="group" aria-label={`Category: ${categoryOf(cat).name}`}>
+      <span className="chips" role="group" aria-label={`Category: ${categoryOf(cat).name}${auto ? ', guessed' : ''}`}>
         {CATEGORIES.map((c) => (
           <button
             key={c.id}
             type="button"
             tabIndex={-1}
-            className={`chip tag-${c.id}`}
+            className={`chip tag-${c.id}${auto && cat === c.id ? ' is-guess' : ''}`}
             aria-pressed={cat === c.id}
-            title={`${c.name} (#${c.letter.toLowerCase()})`}
+            title={
+              auto && cat === c.id ? `${c.name}, guessed. Click to confirm` : `${c.name} (#${c.letter.toLowerCase()})`
+            }
             // Keep focus in the field so choosing a chip doesn't count as clicking away.
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => {

@@ -65,7 +65,7 @@ describe('repeating tasks', () => {
 
   it('turns a task into a weekly rule on its current weekday', () => {
     const state = repeating()
-    expect(state.repeating).toEqual([{ id: 'r1', weekday: 3, text: 'PS due', category: 'school' }])
+    expect(state.repeating).toEqual([{ id: 'r1', weekdays: [3], text: 'PS due', category: 'school' }])
     expect(currentWeek(state).tasks).toMatchObject([{ id: 't1', repeatingId: 'r1' }])
   })
 
@@ -75,13 +75,80 @@ describe('repeating tasks', () => {
       id: 't1',
       patch: { text: 'Problem set due', category: 'job' },
     })
-    expect(state.repeating).toMatchObject([{ text: 'Problem set due', category: 'job', weekday: 3 }])
+    expect(state.repeating).toMatchObject([{ text: 'Problem set due', category: 'job', weekdays: [3] }])
   })
 
   it('stops repeating without removing this week’s copy', () => {
     const state = plannerReducer(repeating(), { type: 'task/stopRepeat', id: 't1' })
     expect(state.repeating).toEqual([])
     expect(currentWeek(state).tasks).toMatchObject([{ id: 't1', text: 'PS due', repeatingId: undefined }])
+  })
+})
+
+describe('tasks on several days', () => {
+  const gym = () =>
+    run([
+      { type: 'task/add', id: 'mon', day: 0, text: 'Gym', category: 'side' },
+      { type: 'task/addDay', id: 'mon', day: 2, newId: 'wed' },
+      { type: 'task/addDay', id: 'mon', day: 4, newId: 'fri' },
+    ])
+
+  it('links copies on other days to the original', () => {
+    const tasks = currentWeek(gym()).tasks
+    expect(tasks.map((t) => [t.id, t.day, t.groupId])).toEqual([
+      ['mon', 0, 'mon'],
+      ['wed', 2, 'mon'],
+      ['fri', 4, 'mon'],
+    ])
+  })
+
+  it('does not add a second copy to a day the task is already on', () => {
+    const state = plannerReducer(gym(), { type: 'task/addDay', id: 'wed', day: 4, newId: 'dup' })
+    expect(currentWeek(state).tasks).toHaveLength(3)
+  })
+
+  it('renames every copy, but ticks off only one', () => {
+    let state = plannerReducer(gym(), { type: 'task/update', id: 'wed', patch: { text: 'Gym: legs', category: 'job' } })
+    state = plannerReducer(state, { type: 'task/update', id: 'wed', patch: { done: true } })
+    expect(currentWeek(state).tasks.map((t) => [t.text, t.category, t.done])).toEqual([
+      ['Gym: legs', 'job', false],
+      ['Gym: legs', 'job', true],
+      ['Gym: legs', 'job', false],
+    ])
+  })
+
+  it('merges when one copy is dragged onto a day that already has another', () => {
+    const state = plannerReducer(gym(), { type: 'task/move', id: 'mon', day: 2 })
+    expect(currentWeek(state).tasks.map((t) => t.day)).toEqual([2, 4])
+  })
+
+  it('removes one day or all of them', () => {
+    expect(currentWeek(plannerReducer(gym(), { type: 'task/removeDay', id: 'wed' })).tasks.map((t) => t.day)).toEqual([
+      0, 4,
+    ])
+    expect(currentWeek(plannerReducer(gym(), { type: 'task/removeGroup', id: 'wed' })).tasks).toEqual([])
+  })
+
+  it('repeats on all of its days, and day changes update the weekly rule', () => {
+    let state = plannerReducer(gym(), { type: 'task/repeat', id: 'mon', repeatingId: 'r1' })
+    expect(state.repeating).toMatchObject([{ id: 'r1', weekdays: [0, 2, 4] }])
+    state = plannerReducer(state, { type: 'task/addDay', id: 'mon', day: 1, newId: 'tue' })
+    state = plannerReducer(state, { type: 'task/removeDay', id: 'fri' })
+    expect(state.repeating).toMatchObject([{ weekdays: [0, 1, 2] }])
+    expect(currentWeek(state).tasks.every((t) => t.repeatingId === 'r1')).toBe(true)
+  })
+
+  it('brings a repeating task back on each of its days next week, linked together', () => {
+    let state = plannerReducer(gym(), { type: 'task/repeat', id: 'mon', repeatingId: 'r1' })
+    state = plannerReducer(state, { type: 'week/review', doneIds: [], nextStart: '2026-10-26' })
+    const tasks = currentWeek(state).tasks
+    expect(tasks.map((t) => t.day)).toEqual([0, 2, 4])
+    expect(new Set(tasks.map((t) => t.groupId)).size).toBe(1)
+  })
+
+  it('rolls an unfinished multi-day task over once', () => {
+    const state = plannerReducer(gym(), { type: 'week/review', doneIds: ['mon'], nextStart: '2026-10-26' })
+    expect(state.backlog.map((b) => b.text)).toEqual(['Gym'])
   })
 })
 

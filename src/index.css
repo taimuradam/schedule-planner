@@ -660,7 +660,7 @@ select {
 .menu {
   position: fixed;
   z-index: 50;
-  min-width: 230px;
+  min-width: 250px;
   padding: 6px;
   border: 1px solid var(--border);
   border-radius: 10px;
@@ -749,7 +749,60 @@ select {
   cursor: default;
 }
 
+.menu-toggles {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  padding: 2px 6px 6px;
+}
+
+.menu-toggle {
+  height: 30px;
+  padding: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  background: var(--surface);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-2);
+  cursor: pointer;
+}
+
+.menu-toggle:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+.menu-toggle[aria-checked='true'] {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.menu-toggle:disabled {
+  cursor: default;
+}
+
+.menu-toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
 /* Dragging */
+
+.drag-hint {
+  font-size: 11px;
+  color: var(--text-3);
+  white-space: nowrap;
+}
+
+.drag-copy {
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: 11px;
+  font-weight: 700;
+}
 
 .drag-card {
   display: inline-flex;

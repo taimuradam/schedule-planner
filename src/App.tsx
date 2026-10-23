@@ -7,16 +7,18 @@ import {
   useSensors,
   type Announcements,
   type DragEndEvent,
+  type DragStartEvent,
 } from '@dnd-kit/core'
-import { useMemo, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { BACKLOG_DROP, BacklogDrawer } from './components/BacklogDrawer'
 import { PlanningSteps } from './components/PlanningSteps'
 import { stepFocus, type Step } from './components/steps'
 import { CategoryTag, Icon, IconButton } from './components/ui'
 import { EditorContext, type Editor } from './editor/editorContext'
+import { buildGuesser, examplesFrom } from './editor/guessCategory'
 import { Menu, MenuItem } from './editor/Menu'
 import { formatWeekRange, goalMonthOf, planningWeekStart, WEEKDAY_LONG } from './model/dates'
-import { currentGoals, currentWeek } from './model/planner'
+import { currentGoals, currentWeek, newId } from './model/planner'
 import { downloadBackup, readBackup } from './model/storage'
 import type { CategoryId, PlannerState, Weekday } from './model/types'
 import type { DragData } from './sheet/lines'
@@ -52,6 +54,9 @@ export default function App() {
   const [flash, setFlash] = useState<Flash | null>(null)
   const [lastCategory, setLastCategory] = useState<CategoryId>('job')
   const [dragging, setDragging] = useState<DragData | null>(null)
+  // Holding Option (Alt) while dropping a day's task copies it instead of moving it.
+  const [copying, setCopying] = useState(false)
+  const copyingRef = useRef(false)
   const [moreAnchor, setMoreAnchor] = useState<HTMLElement | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
@@ -60,12 +65,14 @@ export default function App() {
     state.goals.length === 0 && state.dailyTasks.length === 0 && state.backlog.length === 0 && week.tasks.length === 0
 
   // Pointer only: drags start after a few pixels so clicks still edit. Keyboard
-  // users move tasks with "Move to" in each task's menu instead.
+  // users change a task's days from the toggles in its menu instead.
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
 
+  // Relearns from everything you've filed whenever the planner changes.
+  const guess = useMemo(() => buildGuesser(examplesFrom(state)), [state])
   const editor = useMemo<Editor>(
-    () => ({ lastCategory, setLastCategory, notify: (text, undo) => setFlash({ text, undo }) }),
-    [lastCategory],
+    () => ({ lastCategory, setLastCategory, guess, notify: (text, undo) => setFlash({ text, undo }) }),
+    [lastCategory, guess],
   )
 
   const sheet = useMemo<SheetData>(() => {
@@ -84,8 +91,34 @@ export default function App() {
     if (next === 'days') setBacklogOpen(true)
   }
 
+  const trackCopying = (altKey: boolean) => {
+    copyingRef.current = altKey
+    setCopying(altKey)
+  }
+
+  // Option can be pressed or released mid-drag, so keep watching it.
+  useEffect(() => {
+    if (!dragging) return
+    const onEvent = (e: KeyboardEvent | PointerEvent) => trackCopying(e.altKey)
+    window.addEventListener('keydown', onEvent)
+    window.addEventListener('keyup', onEvent)
+    window.addEventListener('pointermove', onEvent)
+    return () => {
+      window.removeEventListener('keydown', onEvent)
+      window.removeEventListener('keyup', onEvent)
+      window.removeEventListener('pointermove', onEvent)
+    }
+  }, [dragging])
+
+  const onDragStart = ({ active, activatorEvent }: DragStartEvent) => {
+    setDragging(active.data.current as DragData)
+    trackCopying((activatorEvent as PointerEvent).altKey)
+  }
+
   const onDragEnd = ({ active, over }: DragEndEvent) => {
+    const copy = copyingRef.current
     setDragging(null)
+    trackCopying(false)
     if (!over) return
     const data = active.data.current as DragData
     const target = String(over.id)
@@ -94,8 +127,9 @@ export default function App() {
       return
     }
     const day = Number(target.slice(4)) as Weekday
-    if (data.kind === 'task') dispatch({ type: 'task/move', id: data.id, day })
-    else dispatch({ type: 'backlog/schedule', id: data.id, day })
+    if (data.kind === 'backlog') dispatch({ type: 'backlog/schedule', id: data.id, day })
+    else if (copy) dispatch({ type: 'task/addDay', id: data.id, day, newId: newId() })
+    else dispatch({ type: 'task/move', id: data.id, day })
   }
 
   const importBackup = async (file: File) => {
@@ -115,9 +149,12 @@ export default function App() {
         sensors={sensors}
         collisionDetection={pointerWithin}
         accessibility={{ announcements }}
-        onDragStart={({ active }) => setDragging(active.data.current as DragData)}
+        onDragStart={onDragStart}
         onDragEnd={onDragEnd}
-        onDragCancel={() => setDragging(null)}
+        onDragCancel={() => {
+          setDragging(null)
+          trackCopying(false)
+        }}
       >
         <div className={`app${backlogOpen ? ' has-drawer' : ''}`}>
           <header className="topbar">
@@ -233,6 +270,8 @@ export default function App() {
             <div className="drag-card">
               <CategoryTag id={dragging.category} />
               <span>{dragging.text}</span>
+              {dragging.kind === 'task' &&
+                (copying ? <span className="drag-copy">+ copy</span> : <span className="drag-hint">⌥ to copy</span>)}
             </div>
           )}
         </DragOverlay>

@@ -1,5 +1,5 @@
-import { WEEKDAY_LONG, WEEKDAY_SHORT, WEEKDAYS } from '../model/dates'
-import { newId } from '../model/planner'
+import { formatDays, WEEKDAY_LETTER, WEEKDAY_LONG, WEEKDAY_SHORT, WEEKDAYS } from '../model/dates'
+import { currentWeek, groupOf, newId } from '../model/planner'
 import type { BacklogItem, DailyTask, DayTask, Goal, Weekday } from '../model/types'
 import { usePlanner, usePlannerDispatch } from '../state/contexts'
 import { useEditor } from './editorContext'
@@ -20,15 +20,7 @@ function closeAfter(onClose: () => void) {
   }
 }
 
-function MoveTargets({
-  current,
-  onDay,
-  onBacklog,
-}: {
-  current?: Weekday
-  onDay: (day: Weekday) => void
-  onBacklog?: () => void
-}) {
+function DayButtons({ onDay }: { onDay: (day: Weekday) => void }) {
   return (
     <div className="menu-days">
       {WEEKDAYS.map((d) => (
@@ -37,18 +29,43 @@ function MoveTargets({
           type="button"
           role="menuitem"
           className="menu-day"
-          disabled={d === current}
-          aria-label={`Move to ${WEEKDAY_LONG[d]}`}
+          aria-label={`Put on ${WEEKDAY_LONG[d]}`}
           onClick={() => onDay(d)}
         >
           {WEEKDAY_SHORT[d]}
         </button>
       ))}
-      {onBacklog && (
-        <button type="button" role="menuitem" className="menu-day menu-day-wide" onClick={onBacklog}>
-          Backlog
+    </div>
+  )
+}
+
+/** One toggle per weekday, ticked for each day the task is on. */
+function DayToggles({
+  days,
+  locked,
+  onToggle,
+}: {
+  days: Set<Weekday>
+  locked?: Weekday
+  onToggle: (day: Weekday) => void
+}) {
+  return (
+    <div className="menu-toggles">
+      {WEEKDAYS.map((d) => (
+        <button
+          key={d}
+          type="button"
+          role="menuitemcheckbox"
+          aria-checked={days.has(d)}
+          aria-label={WEEKDAY_LONG[d]}
+          title={d === locked ? 'Its only day. Use Delete to remove it.' : WEEKDAY_LONG[d]}
+          className="menu-toggle"
+          disabled={d === locked}
+          onClick={() => onToggle(d)}
+        >
+          {WEEKDAY_LETTER[d]}
         </button>
-      )}
+      ))}
     </div>
   )
 }
@@ -58,6 +75,16 @@ export function TaskMenu({ item: task, anchor, onClose, onRename }: MenuProps<Da
   const dispatch = usePlannerDispatch()
   const editor = useEditor()
   const then = closeAfter(onClose)
+  const group = groupOf(currentWeek(state), task)
+  const days = new Set(group.map((t) => t.day))
+  const thisWeek = task.repeatingId ? ' this week' : ''
+
+  // Stays open, so you can tick several days in a row.
+  const toggleDay = (day: Weekday) => {
+    const copy = group.find((t) => t.day === day)
+    if (copy) dispatch({ type: 'task/removeDay', id: copy.id })
+    else dispatch({ type: 'task/addDay', id: task.id, day, newId: newId() })
+  }
 
   return (
     <Menu anchor={anchor} label={`Options for ${task.text}`} onClose={onClose}>
@@ -78,26 +105,39 @@ export function TaskMenu({ item: task, anchor, onClose, onRename }: MenuProps<Da
           icon="repeat"
           onSelect={then(() => dispatch({ type: 'task/repeat', id: task.id, repeatingId: newId() }))}
         >
-          Repeat every {WEEKDAY_LONG[task.day]}
+          Repeat every {formatDays([...days])}
         </MenuItem>
       )}
       <MenuDivider />
-      <MenuLabel>Move to</MenuLabel>
-      <MoveTargets
-        current={task.day}
-        onDay={(day) => then(() => dispatch({ type: 'task/move', id: task.id, day }))()}
-        onBacklog={then(() => dispatch({ type: 'task/unschedule', id: task.id }))}
-      />
+      <MenuLabel>{task.repeatingId ? 'On these days, every week' : 'On these days'}</MenuLabel>
+      <DayToggles days={days} locked={days.size === 1 ? task.day : undefined} onToggle={toggleDay} />
+      <MenuItem icon="inbox" onSelect={then(() => dispatch({ type: 'task/unschedule', id: task.id }))}>
+        Back to backlog
+      </MenuItem>
       <MenuDivider />
+      {group.length > 1 && (
+        <MenuItem
+          icon="trash"
+          danger
+          onSelect={then(() => {
+            dispatch({ type: 'task/remove', id: task.id })
+            editor.notify(`Deleted “${task.text}” from ${WEEKDAY_LONG[task.day]}.`, state)
+          })}
+        >
+          Delete from {WEEKDAY_LONG[task.day]}
+          {thisWeek}
+        </MenuItem>
+      )}
       <MenuItem
         icon="trash"
         danger
         onSelect={then(() => {
-          dispatch({ type: 'task/remove', id: task.id })
+          dispatch({ type: 'task/removeGroup', id: task.id })
           editor.notify(`Deleted “${task.text}”.`, state)
         })}
       >
-        {task.repeatingId ? 'Delete from this week' : 'Delete'}
+        {group.length > 1 ? `Delete from all ${group.length} days` : 'Delete'}
+        {thisWeek}
       </MenuItem>
     </Menu>
   )
@@ -120,7 +160,7 @@ export function BacklogMenu({ item, anchor, onClose, onRename }: MenuProps<Backl
         Rename
       </MenuItem>
       <MenuLabel>Put on</MenuLabel>
-      <MoveTargets onDay={(day) => then(() => dispatch({ type: 'backlog/schedule', id: item.id, day }))()} />
+      <DayButtons onDay={(day) => then(() => dispatch({ type: 'backlog/schedule', id: item.id, day }))()} />
       <MenuDivider />
       <MenuItem
         icon="trash"

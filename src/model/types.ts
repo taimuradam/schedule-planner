@@ -26,10 +26,10 @@ export interface DailyTask {
   active: boolean
 }
 
-/** Pinned to a weekday and pre-filled into every new week. */
+/** Pinned to one or more weekdays and pre-filled into every new week. */
 export interface RepeatingTask {
   id: string
-  weekday: Weekday
+  weekdays: Weekday[]
   text: string
   category: CategoryId
 }
@@ -51,6 +51,8 @@ export interface DayTask {
   done: boolean
   carriedOver: boolean
   repeatingId?: string
+  /** Shared by copies of the same task on different days of one week. */
+  groupId?: string
 }
 
 export interface Week {

@@ -80,6 +80,14 @@ export function formatWeekRange(weekStart: string): string {
   return `${left} – ${right}`
 }
 
+/** "Tuesday", "Mon, Wed, Fri", or "day" for all seven. */
+export function formatDays(days: Weekday[]): string {
+  const sorted = [...days].sort((a, b) => a - b)
+  if (sorted.length === 7) return 'day'
+  if (sorted.length === 1) return WEEKDAY_LONG[sorted[0]]
+  return sorted.map((d) => WEEKDAY_SHORT[d]).join(', ')
+}
+
 /** "Oct 26" */
 export function formatShortDate(s: string): string {
   const d = parseISODate(s)

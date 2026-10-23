@@ -32,6 +32,9 @@ export type Action =
   | { type: 'task/remove'; id: string }
   | { type: 'task/move'; id: string; day: Weekday }
   | { type: 'task/unschedule'; id: string }
+  | { type: 'task/addDay'; id: string; day: Weekday; newId: string }
+  | { type: 'task/removeDay'; id: string }
+  | { type: 'task/removeGroup'; id: string }
   | { type: 'task/repeat'; id: string; repeatingId: string }
   | { type: 'task/stopRepeat'; id: string }
   | { type: 'week/review'; doneIds: string[]; nextStart: string }
@@ -42,19 +45,22 @@ export function newId(): string {
 }
 
 export function createWeek(start: string, repeating: RepeatingTask[]): Week {
-  const tasks = [...repeating].sort((a, b) => a.weekday - b.weekday).map((r) => taskFromRepeating(start, r))
+  const tasks = repeating
+    .flatMap((r) => r.weekdays.map((day) => taskFromRepeating(start, r, day)))
+    .sort((a, b) => a.day - b.day)
   return { start, tasks, reviewed: false }
 }
 
-function taskFromRepeating(weekStart: string, r: RepeatingTask): DayTask {
+function taskFromRepeating(weekStart: string, r: RepeatingTask, day: Weekday): DayTask {
   return {
-    id: `${weekStart}:${r.id}`,
-    day: r.weekday,
+    id: `${weekStart}:${r.id}:${day}`,
+    day,
     text: r.text,
     category: r.category,
     done: false,
     carriedOver: false,
     repeatingId: r.id,
+    groupId: `${weekStart}:${r.id}`,
   }
 }
 
@@ -73,6 +79,11 @@ export function createInitialState(today: Date): PlannerState {
 
 export function currentWeek(state: PlannerState): Week {
   return state.weeks[state.currentWeek]
+}
+
+/** Every copy of a task in the week, one per day it's on. */
+export function groupOf(week: Week, task: DayTask): DayTask[] {
+  return task.groupId ? week.tasks.filter((t) => t.groupId === task.groupId) : [task]
 }
 
 export function goalsForMonth(state: PlannerState, month: string): Goal[] {
@@ -94,6 +105,24 @@ function patchById<T extends { id: string }>(items: T[], id: string, patch: Part
 
 function trimmed<T extends { text?: string }>(patch: T): T {
   return patch.text === undefined ? patch : { ...patch, text: patch.text.trim() }
+}
+
+const sortedDays = (days: Weekday[]) => [...new Set(days)].sort((a, b) => a - b)
+
+/**
+ * Changes which weekdays a repeating task comes back on. With no days left
+ * it stops repeating, and this week's copies are kept as one-offs.
+ */
+function withRuleDays(state: PlannerState, ruleId: string, fn: (days: Weekday[]) => Weekday[]): PlannerState {
+  const rule = state.repeating.find((r) => r.id === ruleId)
+  if (!rule) return state
+  const weekdays = sortedDays(fn(rule.weekdays))
+  if (weekdays.length > 0) return { ...state, repeating: patchById(state.repeating, ruleId, { weekdays }) }
+  const next = withWeek(state, (w) => ({
+    ...w,
+    tasks: w.tasks.map((t) => (t.repeatingId === ruleId ? { ...t, repeatingId: undefined } : t)),
+  }))
+  return { ...next, repeating: next.repeating.filter((r) => r.id !== ruleId) }
 }
 
 export function plannerReducer(state: PlannerState, action: Action): PlannerState {
@@ -153,24 +182,37 @@ export function plannerReducer(state: PlannerState, action: Action): PlannerStat
       return withWeek(state, (w) => ({ ...w, tasks: [...w.tasks, task] }))
     }
     case 'task/update': {
-      const patch = trimmed(action.patch)
-      const next = withWeek(state, (w) => ({ ...w, tasks: patchById(w.tasks, action.id, patch) }))
+      const task = currentWeek(state).tasks.find((t) => t.id === action.id)
+      if (!task) return state
+      // A rename or new category applies to the task on every day it's on;
+      // done-ness belongs to each day's copy alone.
+      const { done, ...shared } = trimmed(action.patch)
+      const groupIds = new Set(groupOf(currentWeek(state), task).map((t) => t.id))
+      const next = withWeek(state, (w) => ({
+        ...w,
+        tasks: w.tasks.map((t) =>
+          t.id === task.id
+            ? { ...t, ...shared, ...(done !== undefined && { done }) }
+            : groupIds.has(t.id)
+              ? { ...t, ...shared }
+              : t,
+        ),
+      }))
       // Renaming or recategorising a weekly task changes it for future weeks too.
-      const ruleId = currentWeek(state).tasks.find((t) => t.id === action.id)?.repeatingId
-      const { text, category } = patch
-      if (!ruleId || (text === undefined && category === undefined)) return next
-      const rulePatch = { ...(text !== undefined && { text }), ...(category !== undefined && { category }) }
-      return { ...next, repeating: patchById(next.repeating, ruleId, rulePatch) }
+      if (!task.repeatingId || Object.keys(shared).length === 0) return next
+      return { ...next, repeating: patchById(next.repeating, task.repeatingId, shared) }
     }
     case 'task/remove':
       return withWeek(state, (w) => ({ ...w, tasks: w.tasks.filter((t) => t.id !== action.id) }))
     case 'task/move': {
       // Moving to another day puts the task at the bottom of that day's list.
+      // If the task is already on that day too, the two simply merge.
       const task = currentWeek(state).tasks.find((t) => t.id === action.id)
       if (!task || task.day === action.day) return state
+      const alreadyThere = groupOf(currentWeek(state), task).some((t) => t.day === action.day)
       return withWeek(state, (w) => ({
         ...w,
-        tasks: [...w.tasks.filter((t) => t.id !== task.id), { ...task, day: action.day }],
+        tasks: [...w.tasks.filter((t) => t.id !== task.id), ...(alreadyThere ? [] : [{ ...task, day: action.day }])],
       }))
     }
     case 'task/unschedule': {
@@ -181,17 +223,51 @@ export function plannerReducer(state: PlannerState, action: Action): PlannerStat
       return { ...next, backlog: [item, ...next.backlog] }
     }
 
+    case 'task/addDay': {
+      // Puts the same task on another day as well, linked to the original.
+      const task = currentWeek(state).tasks.find((t) => t.id === action.id)
+      if (!task || groupOf(currentWeek(state), task).some((t) => t.day === action.day)) return state
+      const groupId = task.groupId ?? task.id
+      const copy: DayTask = { ...task, id: action.newId, day: action.day, done: false, groupId }
+      const next = withWeek(state, (w) => ({
+        ...w,
+        tasks: [...w.tasks.map((t) => (t.id === task.id ? { ...t, groupId } : t)), copy],
+      }))
+      return task.repeatingId ? withRuleDays(next, task.repeatingId, (days) => [...days, action.day]) : next
+    }
+    case 'task/removeDay': {
+      // Takes the task off one day; a weekly task stops coming back on that day.
+      const task = currentWeek(state).tasks.find((t) => t.id === action.id)
+      if (!task) return state
+      const next = withWeek(state, (w) => ({ ...w, tasks: w.tasks.filter((t) => t.id !== task.id) }))
+      return task.repeatingId
+        ? withRuleDays(next, task.repeatingId, (days) => days.filter((d) => d !== task.day))
+        : next
+    }
+    case 'task/removeGroup': {
+      // Removes the task from every day this week. Weekly tasks still come back.
+      const task = currentWeek(state).tasks.find((t) => t.id === action.id)
+      if (!task) return state
+      const ids = new Set(groupOf(currentWeek(state), task).map((t) => t.id))
+      return withWeek(state, (w) => ({ ...w, tasks: w.tasks.filter((t) => !ids.has(t.id)) }))
+    }
+
     case 'task/repeat': {
-      // Repeats on the weekday the task is on now, from next week onwards.
+      // Repeats on every day the task is on now, from next week onwards.
       const task = currentWeek(state).tasks.find((t) => t.id === action.id)
       if (!task || task.repeatingId) return state
+      const group = groupOf(currentWeek(state), task)
       const rule: RepeatingTask = {
         id: action.repeatingId,
-        weekday: task.day,
+        weekdays: sortedDays(group.map((t) => t.day)),
         text: task.text,
         category: task.category,
       }
-      const next = withWeek(state, (w) => ({ ...w, tasks: patchById(w.tasks, task.id, { repeatingId: rule.id }) }))
+      const ids = new Set(group.map((t) => t.id))
+      const next = withWeek(state, (w) => ({
+        ...w,
+        tasks: w.tasks.map((t) => (ids.has(t.id) ? { ...t, repeatingId: rule.id } : t)),
+      }))
       return { ...next, repeating: [...next.repeating, rule] }
     }
     case 'task/stopRepeat': {
@@ -225,9 +301,17 @@ function reviewWeek(state: PlannerState, doneIds: string[], nextStart: string): 
   const tasks = week.tasks.map((t) => ({ ...t, done: done.has(t.id) }))
 
   // Repeating tasks come back next week on their own, so they don't roll over.
+  // A task on several days rolls over once, not once per day.
   const backlogIds = new Set(state.backlog.map((b) => b.id))
+  const rolledGroups = new Set<string>()
   const rolled: BacklogItem[] = tasks
     .filter((t) => !t.done && !t.repeatingId && !backlogIds.has(t.id))
+    .filter((t) => {
+      if (!t.groupId) return true
+      if (rolledGroups.has(t.groupId)) return false
+      rolledGroups.add(t.groupId)
+      return true
+    })
     .map((t) => ({ id: t.id, text: t.text, category: t.category, carriedOver: true }))
 
   const start = nextStart > week.start ? nextStart : addDays(week.start, 7)
