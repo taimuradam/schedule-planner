@@ -1,0 +1,22 @@
+import type { Category, CategoryId } from './types'
+
+export const CATEGORIES: readonly Category[] = [
+  { id: 'job', letter: 'J', name: 'Job search' },
+  { id: 'side', letter: 'S', name: 'Side projects' },
+  { id: 'school', letter: 'H', name: 'Homework' },
+]
+
+export const CATEGORY_IDS = CATEGORIES.map((c) => c.id)
+
+export function category(id: CategoryId): Category {
+  return CATEGORIES.find((c) => c.id === id) ?? CATEGORIES[0]
+}
+
+export function isCategoryId(value: unknown): value is CategoryId {
+  return typeof value === 'string' && (CATEGORY_IDS as string[]).includes(value)
+}
+
+export function nextCategory(id: CategoryId): CategoryId {
+  const i = CATEGORIES.findIndex((c) => c.id === id)
+  return CATEGORIES[(i + 1) % CATEGORIES.length].id
+}
