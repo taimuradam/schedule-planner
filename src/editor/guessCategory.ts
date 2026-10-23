@@ -1,3 +1,4 @@
+import { CATEGORY_IDS } from '../model/categories'
 import type { CategoryId, PlannerState } from '../model/types'
 
 // Starter vocabulary, used until the planner has learned your own words.
@@ -20,6 +21,12 @@ const KEYWORDS: Record<CategoryId, string[]> = {
     'study', 'studying', 'notes', 'textbook', 'professor', 'office hours', 'recitation', 'syllabus', 'seminar',
     'thesis', 'tutoring',
   ],
+  personal: [
+    'groceries', 'grocery', 'cook', 'cooking', 'meal prep', 'meals', 'dinner', 'lunch', 'breakfast', 'gym',
+    'workout', 'running', 'yoga', 'walk', 'laundry', 'cleaning', 'dishes', 'buy', 'order', 'amazon', 'haircut',
+    'dentist', 'doctor', 'appointment', 'pharmacy', 'bank', 'bills', 'rent', 'pay', 'errand', 'errands',
+    'call mom', 'call dad', 'birthday', 'gift', 'meditate', 'journal', 'sleep',
+  ],
 }
 
 // Words too common to say anything about a category.
@@ -31,7 +38,6 @@ const STOPWORDS = new Set(
   ).split(' '),
 )
 
-const CATEGORY_IDS: CategoryId[] = ['job', 'side', 'school']
 
 // Letters and digits split apart, so "PS4" reads as "ps" and "4".
 function tokenize(text: string): string[] {
@@ -39,6 +45,8 @@ function tokenize(text: string): string[] {
 }
 
 const meaningful = (tokens: string[]) => [...new Set(tokens)].filter((t) => t.length > 1 && !STOPWORDS.has(t))
+
+const zeroes = () => Object.fromEntries(CATEGORY_IDS.map((id) => [id, 0])) as Record<CategoryId, number>
 
 export interface Example {
   text: string
@@ -73,7 +81,7 @@ export function buildGuesser(examples: Example[]): (text: string) => CategoryId 
   const counts = new Map<string, Record<CategoryId, number>>()
   for (const e of examples) {
     for (const word of meaningful(tokenize(e.text))) {
-      const c = counts.get(word) ?? { job: 0, side: 0, school: 0 }
+      const c = counts.get(word) ?? zeroes()
       c[e.category] += 1
       counts.set(word, c)
     }
@@ -84,7 +92,7 @@ export function buildGuesser(examples: Example[]): (text: string) => CategoryId 
     if (tokens.length === 0) return undefined
     const words = new Set(tokens)
     const joined = ` ${tokens.join(' ')} `
-    const score: Record<CategoryId, number> = { job: 0, side: 0, school: 0 }
+    const score = zeroes()
 
     for (const id of CATEGORY_IDS) {
       for (const k of KEYWORDS[id]) {
@@ -94,7 +102,7 @@ export function buildGuesser(examples: Example[]): (text: string) => CategoryId 
     for (const word of meaningful(tokens)) {
       const c = counts.get(word)
       if (!c) continue
-      const n = c.job + c.side + c.school
+      const n = CATEGORY_IDS.reduce((sum, id) => sum + c[id], 0)
       // Words seen more often are more trustworthy: 1 sighting counts half.
       for (const id of CATEGORY_IDS) score[id] += 2 * (c[id] / n) * (n / (n + 1))
     }

@@ -1,4 +1,4 @@
-import { addDays, goalMonthOf, planningWeekStart } from './dates'
+import { addDays, goalMonthOf, planningWeekStart, WEEKDAYS } from './dates'
 import type {
   BacklogItem,
   CategoryId,
@@ -21,7 +21,7 @@ export type Action =
   | { type: 'goal/remove'; id: string }
   | { type: 'goal/copyMonth'; from: string; to: string }
   | { type: 'daily/add'; id: string; text: string; category: CategoryId }
-  | { type: 'daily/update'; id: string; patch: Edit<DailyTask, 'text' | 'category' | 'active'> }
+  | { type: 'daily/update'; id: string; patch: Edit<DailyTask, 'text' | 'category' | 'active' | 'days'> }
   | { type: 'daily/remove'; id: string }
   | { type: 'backlog/add'; id: string; text: string; category: CategoryId }
   | { type: 'backlog/update'; id: string; patch: Edit<BacklogItem, 'text' | 'category'> }
@@ -146,10 +146,16 @@ export function plannerReducer(state: PlannerState, action: Action): PlannerStat
 
     case 'daily/add': {
       const { id, text, category } = action
-      return { ...state, dailyTasks: [...state.dailyTasks, { id, text: text.trim(), category, active: true }] }
+      const task: DailyTask = { id, text: text.trim(), category, active: true, days: [...WEEKDAYS] }
+      return { ...state, dailyTasks: [...state.dailyTasks, task] }
     }
-    case 'daily/update':
-      return { ...state, dailyTasks: patchById(state.dailyTasks, action.id, trimmed(action.patch)) }
+    case 'daily/update': {
+      const patch = trimmed(action.patch)
+      const days = patch.days && sortedDays(patch.days)
+      // A habit always keeps at least one day; hide it from the page instead.
+      if (days?.length === 0) return state
+      return { ...state, dailyTasks: patchById(state.dailyTasks, action.id, days ? { ...patch, days } : patch) }
+    }
     case 'daily/remove':
       return { ...state, dailyTasks: state.dailyTasks.filter((t) => t.id !== action.id) }
 

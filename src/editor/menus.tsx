@@ -58,12 +58,39 @@ function DayToggles({
           role="menuitemcheckbox"
           aria-checked={days.has(d)}
           aria-label={WEEKDAY_LONG[d]}
-          title={d === locked ? 'Its only day. Use Delete to remove it.' : WEEKDAY_LONG[d]}
+          title={d === locked ? 'It needs at least one day' : WEEKDAY_LONG[d]}
           className="menu-toggle"
           disabled={d === locked}
           onClick={() => onToggle(d)}
         >
           {WEEKDAY_LETTER[d]}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+const WORKWEEK: Weekday[] = [0, 1, 2, 3, 4]
+
+/** One-click day sets for habits, next to the day toggles. */
+function DayPresets({ days, onPick }: { days: Weekday[]; onPick: (days: Weekday[]) => void }) {
+  const presets = [
+    { label: 'Weekdays', days: WORKWEEK },
+    { label: 'Every day', days: [...WEEKDAYS] },
+  ]
+  const key = days.join()
+  return (
+    <div className="menu-presets">
+      {presets.map((p) => (
+        <button
+          key={p.label}
+          type="button"
+          role="menuitemradio"
+          aria-checked={p.days.join() === key}
+          className="menu-preset"
+          onClick={() => onPick(p.days)}
+        >
+          {p.label}
         </button>
       ))}
     </div>
@@ -211,6 +238,7 @@ export function DailyMenu({ item: task, anchor, onClose, onRename }: MenuProps<D
   const dispatch = usePlannerDispatch()
   const editor = useEditor()
   const then = closeAfter(onClose)
+  const setDays = (days: Weekday[]) => dispatch({ type: 'daily/update', id: task.id, patch: { days } })
 
   return (
     <Menu anchor={anchor} label={`Options for ${task.text}`} onClose={onClose}>
@@ -222,6 +250,16 @@ export function DailyMenu({ item: task, anchor, onClose, onRename }: MenuProps<D
       <MenuItem icon="pencil" onSelect={then(onRename)}>
         Rename
       </MenuItem>
+      <MenuDivider />
+      {/* Stays open, so you can change several days in a row. */}
+      <MenuLabel>On these days</MenuLabel>
+      <DayToggles
+        days={new Set(task.days)}
+        locked={task.days.length === 1 ? task.days[0] : undefined}
+        onToggle={(day) => setDays(task.days.includes(day) ? task.days.filter((d) => d !== day) : [...task.days, day])}
+      />
+      <DayPresets days={task.days} onPick={setDays} />
+      <MenuDivider />
       <MenuItem
         icon={task.active ? 'eyeOff' : 'eye'}
         onSelect={then(() => dispatch({ type: 'daily/update', id: task.id, patch: { active: !task.active } }))}

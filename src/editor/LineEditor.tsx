@@ -5,9 +5,9 @@ import { extractCategory } from './categoryTokens'
 import { useEditor } from './editorContext'
 
 /**
- * One text field for writing a line, with J/S/H chips to set its category.
+ * One text field for writing a line, with a chip per category (J/S/H/P).
  * New lines guess the category from the text (shown dashed) until you pick
- * one with a chip or type #j, #s or #h. Enter saves, Escape cancels, and
+ * one with a chip or type #j, #s, #h or #p. Enter saves, Escape cancels, and
  * clicking away saves whatever was typed.
  */
 export function LineEditor({

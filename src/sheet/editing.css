@@ -50,6 +50,12 @@
   --tag-bg: #f8ecd6;
 }
 
+.is-editing .sheet-tag-personal,
+.sheet .chip.tag-personal {
+  --tag: #6b3fa0;
+  --tag-bg: #efe7f8;
+}
+
 .is-editing .sheet-tag {
   border-color: var(--tag);
   background: var(--tag-bg);

@@ -22,7 +22,7 @@ Then open http://localhost:5173 in your browser.
 The screen shows the page exactly as it will print. You edit right on it:
 
 - **Click any blank line to write on it.** Press Enter to save and start the next line, or Escape to stop.
-- **The category is guessed as you type.** The guess comes from keywords like "resume", "deploy" or "midterm" and from how you've filed similar lines before. A guessed category has a dashed outline; click J, S or H, or type `#j`, `#s` or `#h`, to pick a different one.
+- **The category is guessed as you type.** The guess comes from keywords like "resume", "deploy", "midterm" or "groceries" and from how you've filed similar lines before. A guessed category has a dashed outline; click J, S, H or P, or type `#j`, `#s`, `#h` or `#p`, to pick a different one.
 - **Click any text to change it.** Hover over a line and click **⋯** (or right-click it) to change its category, repeat it every week, send it back to the backlog, or delete it.
 - **Put a task on several days** by ticking days under "On these days" in its **⋯** menu. The copies stay linked: renaming one renames them all, and "Repeat every Mon, Wed, Fri" brings the whole set back each week.
 - **Drag tasks** between days, or to and from the **Backlog** drawer. Hold **⌥ Option** while you drop to put a copy on that day instead of moving it.
@@ -33,7 +33,7 @@ Click **Plan next week** (or **Plan the week** midweek). A step bar walks you th
 
 1. **Wrap up:** tick what you crossed off on paper. Anything unfinished moves to the top of the backlog. Weekly tasks come back on their own, so they don't.
 2. **Goals:** check this month's goals. In a new month you can copy last month's.
-3. **Every day:** add, change or hide daily tasks.
+3. **Every day:** add, change or hide daily tasks. A habit you skip on some days, like weekends, can be set to just those days from its **⋯** menu; the days it's skipped print a dash instead of a box.
 4. **Plan days:** the backlog opens beside the page; drag tasks in or type them straight into a day.
 5. **Print:** the printout is always US Letter, landscape, on one page. On a busy week the text shrinks a little so it still fits.
 

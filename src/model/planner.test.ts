@@ -85,6 +85,23 @@ describe('repeating tasks', () => {
   })
 })
 
+describe('daily tasks', () => {
+  it('start out on every day and can skip some', () => {
+    let state = run([{ type: 'daily/add', id: 'd1', text: 'Apply to 3 jobs', category: 'job' }])
+    expect(state.dailyTasks[0].days).toEqual([0, 1, 2, 3, 4, 5, 6])
+    state = plannerReducer(state, { type: 'daily/update', id: 'd1', patch: { days: [4, 0, 2, 0] } })
+    expect(state.dailyTasks[0].days).toEqual([0, 2, 4])
+  })
+
+  it('always keep at least one day', () => {
+    const state = run([
+      { type: 'daily/add', id: 'd1', text: 'Gym', category: 'personal' },
+      { type: 'daily/update', id: 'd1', patch: { days: [] } },
+    ])
+    expect(state.dailyTasks[0].days).toHaveLength(7)
+  })
+})
+
 describe('tasks on several days', () => {
   const gym = () =>
     run([

@@ -16,6 +16,8 @@ describe('extractCategory', () => {
   it('accepts ids and a few aliases', () => {
     expect(extractCategory('PS4 #hw', true)).toEqual({ text: 'PS4', category: 'school' })
     expect(extractCategory('Repo #side', true)).toEqual({ text: 'Repo', category: 'side' })
+    expect(extractCategory('Laundry #p', true)).toEqual({ text: 'Laundry', category: 'personal' })
+    expect(extractCategory('Dentist #errands', true)).toEqual({ text: 'Dentist', category: 'personal' })
   })
 
   it('leaves unknown tags and mid-word hashes alone', () => {

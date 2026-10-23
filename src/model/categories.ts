@@ -4,6 +4,7 @@ export const CATEGORIES: readonly Category[] = [
   { id: 'job', letter: 'J', name: 'Job search' },
   { id: 'side', letter: 'S', name: 'Side projects' },
   { id: 'school', letter: 'H', name: 'Homework' },
+  { id: 'personal', letter: 'P', name: 'Personal' },
 ]
 
 export const CATEGORY_IDS = CATEGORIES.map((c) => c.id)

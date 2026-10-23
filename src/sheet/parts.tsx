@@ -14,11 +14,10 @@ export function Box() {
   return <span className="sheet-box" />
 }
 
-export function BoxCells() {
+/** A row of tick boxes, with a faint dash on days the habit is skipped. */
+export function BoxCells({ days }: { days?: Weekday[] }) {
   return WEEKDAYS.map((d) => (
-    <td key={d}>
-      <Box />
-    </td>
+    <td key={d}>{!days || days.includes(d) ? <Box /> : <span className="sheet-skip">–</span>}</td>
   ))
 }
 

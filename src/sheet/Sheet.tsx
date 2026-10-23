@@ -177,7 +177,7 @@ function DailyTable({
                 <th scope="row">
                   <Tag id={t.category} /> {t.text}
                 </th>
-                <BoxCells />
+                <BoxCells days={t.days} />
               </tr>
             ),
           )}

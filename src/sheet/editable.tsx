@@ -129,7 +129,7 @@ export function EditableDailyRow({ task }: { task: DailyTask }) {
             onClose={line.stopRename}
           />
         </th>
-        <BoxCells />
+        <BoxCells days={task.days} />
       </tr>
     )
   }
@@ -147,7 +147,7 @@ export function EditableDailyRow({ task }: { task: DailyTask }) {
             <MoreButton label={`Options for ${task.text}`} open={Boolean(line.menuAnchor)} onOpen={line.openMenu} />
           </span>
         </th>
-        <BoxCells />
+        <BoxCells days={task.days} />
       </tr>
       {line.menuAnchor && (
         <DailyMenu item={task} anchor={line.menuAnchor} onClose={line.closeMenu} onRename={line.startRename} />

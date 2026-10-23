@@ -11,10 +11,14 @@ describe('buildGuesser', () => {
     expect(starter('Deploy MVP')).toBe('side')
     expect(starter('PS4 Q1-3')).toBe('school')
     expect(starter('Study for the midterm')).toBe('school')
+    expect(starter('Buy groceries')).toBe('personal')
+    expect(starter('Gym')).toBe('personal')
+    expect(starter('Meal prep for the week')).toBe('personal')
+    expect(starter('Call mom')).toBe('personal')
   })
 
   it('stays quiet when nothing points anywhere, or it is a toss-up', () => {
-    expect(starter('Buy groceries')).toBeUndefined()
+    expect(starter('Think it over')).toBeUndefined()
     expect(starter('')).toBeUndefined()
     expect(starter('Interview prep for the class project app')).toBeUndefined()
   })

@@ -44,7 +44,7 @@ export function PlanningSteps({
   const hints: Record<Exclude<Step, 'wrapup'>, string> = {
     goals: `These print at the top of every week in ${month}. Click a goal to change it, or a blank line to add one.`,
     daily: 'Each gets a row of seven tick boxes. Click one to change it, or a blank line to add one.',
-    days: "Drag tasks in from the backlog, or click a day's blank lines and type. Add #j, #s or #h to set the category.",
+    days: "Drag tasks in from the backlog, or click a day's blank lines and type. Add #j, #s, #h or #p to set the category.",
     print: "That's the week. Print it and stick it on the fridge.",
   }
 

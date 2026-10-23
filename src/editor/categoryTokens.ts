@@ -2,7 +2,14 @@ import { CATEGORIES } from '../model/categories'
 import type { CategoryId } from '../model/types'
 
 // Words accepted after "#", beyond each category's letter and id.
-const ALIASES: Record<string, CategoryId> = { hw: 'school', homework: 'school', jobs: 'job' }
+const ALIASES: Record<string, CategoryId> = {
+  hw: 'school',
+  homework: 'school',
+  jobs: 'job',
+  life: 'personal',
+  errand: 'personal',
+  errands: 'personal',
+}
 
 function categoryFromToken(word: string): CategoryId | undefined {
   const w = word.toLowerCase()

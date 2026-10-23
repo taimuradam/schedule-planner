@@ -20,6 +20,11 @@ describe('parseState', () => {
     expect(parseState(old)?.repeating).toEqual([{ id: 'r1', weekdays: [3], text: 'PS due', category: 'school' }])
   })
 
+  it('reads daily tasks saved before they had days as every day', () => {
+    const old = { ...valid(), dailyTasks: [{ id: 'd1', text: 'Gym', category: 'personal', active: true }] }
+    expect(parseState(old)?.dailyTasks[0].days).toEqual([0, 1, 2, 3, 4, 5, 6])
+  })
+
   it('rejects things that are not planner data', () => {
     expect(parseState(null)).toBeNull()
     expect(parseState([])).toBeNull()

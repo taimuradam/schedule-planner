@@ -263,6 +263,11 @@
   border-bottom: 0.5pt solid var(--rule-faint);
 }
 
+.sheet-skip {
+  color: #b0b0b0;
+  line-height: 1;
+}
+
 .sheet-row-blank .sheet-box {
   border-color: #9a9a9a;
 }

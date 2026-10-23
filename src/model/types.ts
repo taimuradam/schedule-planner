@@ -1,4 +1,4 @@
-export type CategoryId = 'job' | 'side' | 'school'
+export type CategoryId = 'job' | 'side' | 'school' | 'personal'
 
 export interface Category {
   id: CategoryId
@@ -18,12 +18,14 @@ export interface Goal {
   category: CategoryId
 }
 
-/** Something done every day; printed as a row of seven tick boxes. */
+/** A habit with a tick box for each day it's done, in a row of seven. */
 export interface DailyTask {
   id: string
   text: string
   category: CategoryId
   active: boolean
+  /** Days it's done; skipped days print a dash instead of a box. */
+  days: Weekday[]
 }
 
 /** Pinned to one or more weekdays and pre-filled into every new week. */

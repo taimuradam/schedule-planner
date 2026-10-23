@@ -26,6 +26,8 @@
   --cat-side-bg: #e0f2ea;
   --cat-school: #8a5a0b;
   --cat-school-bg: #f8ecd6;
+  --cat-personal: #6b3fa0;
+  --cat-personal-bg: #efe7f8;
 
   --radius: 8px;
 
@@ -67,6 +69,8 @@
     --cat-side-bg: #1b3a2f;
     --cat-school: #ecc77f;
     --cat-school-bg: #3d3018;
+    --cat-personal: #cbb0f0;
+    --cat-personal-bg: #33264a;
 
     color-scheme: dark;
   }
@@ -243,6 +247,11 @@ select {
 .tag-school {
   --tag: var(--cat-school);
   --tag-bg: var(--cat-school-bg);
+}
+
+.tag-personal {
+  --tag: var(--cat-personal);
+  --tag-bg: var(--cat-personal-bg);
 }
 
 .tag {
@@ -780,6 +789,36 @@ select {
 
 .menu-toggle:disabled {
   cursor: default;
+}
+
+.menu-presets {
+  display: flex;
+  gap: 4px;
+  padding: 0 6px 6px;
+}
+
+.menu-preset {
+  flex: 1;
+  height: 28px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  font-size: 13px;
+  color: var(--text-2);
+  cursor: pointer;
+}
+
+.menu-preset:hover,
+.menu-preset:focus-visible {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.menu-preset[aria-checked='true'] {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
 }
 
 .menu-toggle:focus-visible {
