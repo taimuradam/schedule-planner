@@ -99,13 +99,26 @@
   vertical-align: middle;
 }
 
+.sheet-label-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1em;
+  margin-bottom: 0.45em;
+}
+
 .sheet-label {
   margin-bottom: 0.45em !important;
   font-size: 0.75em;
+  line-height: 1.6;
   font-weight: 600;
   letter-spacing: 0.09em;
   text-transform: uppercase;
   color: var(--ink-soft);
+}
+
+.sheet-label-row .sheet-label {
+  margin-bottom: 0 !important;
 }
 
 /* Goals and daily tasks */
@@ -254,10 +267,15 @@
   border-color: #9a9a9a;
 }
 
-/* Printing: only the print copy of the sheet goes to paper. */
+/* Printing: only the print copy of the sheet goes to paper. On screen it sits
+   off to the side, invisible but still laid out so it can be measured. */
 
-.print-only {
-  display: none;
+.print-copy {
+  position: absolute;
+  top: 0;
+  left: -10000px;
+  visibility: hidden;
+  pointer-events: none;
 }
 
 @media print {
@@ -271,7 +289,8 @@
     display: none !important;
   }
 
-  .print-only {
-    display: block;
+  .print-copy {
+    position: static;
+    visibility: visible;
   }
 }

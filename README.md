@@ -17,11 +17,24 @@ npm run dev
 
 Then open http://localhost:5173 in your browser.
 
+## Using it
+
+The screen shows the page exactly as it will print. You edit right on it:
+
+- **Click any blank line to write on it.** Press Enter to save and start the next line, or Escape to stop.
+- **Set the category as you type** by clicking J, S or H, or by typing `#j`, `#s` or `#h`. New lines use whichever category you picked last.
+- **Click any text to change it.** Hover over a line and click **⋯** (or right-click it) to change its category, repeat it every week, move it to another day, or delete it.
+- **Drag tasks** between days, or to and from the **Backlog** drawer.
+
 ## The Sunday routine
 
-1. Click **Start next week** and tick off whatever you crossed out on paper. Anything unfinished moves to the top of the backlog. Weekly tasks come back on their own, so they don't.
-2. Drag tasks from the backlog onto days, or type new ones straight into a day.
-3. Click **Print**. The printout is always US Letter, landscape, on one page. On a busy week the text shrinks a little so it still fits.
+Click **Plan next week** (or **Plan the week** midweek). A step bar walks you through the page one part at a time:
+
+1. **Wrap up:** tick what you crossed off on paper. Anything unfinished moves to the top of the backlog. Weekly tasks come back on their own, so they don't.
+2. **Goals:** check this month's goals. In a new month you can copy last month's.
+3. **Every day:** add, change or hide daily tasks.
+4. **Plan days:** the backlog opens beside the page; drag tasks in or type them straight into a day.
+5. **Print:** the printout is always US Letter, landscape, on one page. On a busy week the text shrinks a little so it still fits.
 
 Everything saves in your browser as you go. Use **Export backup** now and then, because clearing your browser data clears the planner too.
 
@@ -38,5 +51,6 @@ npm run lint
 | Path | What's there |
 | --- | --- |
 | `src/model/` | Data types, the reducer that every change goes through, date helpers, and browser storage |
-| `src/print/` | The printed page and the shrink-to-fit logic |
-| `src/components/` | The planning board, goals and routines editors, and the review dialog |
+| `src/sheet/` | The page: one component that is both the printout and the on-screen editor, plus shrink-to-fit |
+| `src/editor/` | The line editor with category chips and `#` tags, and the "⋯" menus |
+| `src/components/` | The Sunday step bar, the backlog drawer, and shared buttons and icons |

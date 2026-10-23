@@ -23,9 +23,6 @@ export type Action =
   | { type: 'daily/add'; id: string; text: string; category: CategoryId }
   | { type: 'daily/update'; id: string; patch: Edit<DailyTask, 'text' | 'category' | 'active'> }
   | { type: 'daily/remove'; id: string }
-  | { type: 'repeating/add'; id: string; weekday: Weekday; text: string; category: CategoryId }
-  | { type: 'repeating/update'; id: string; patch: Edit<RepeatingTask, 'text' | 'category' | 'weekday'> }
-  | { type: 'repeating/remove'; id: string }
   | { type: 'backlog/add'; id: string; text: string; category: CategoryId }
   | { type: 'backlog/update'; id: string; patch: Edit<BacklogItem, 'text' | 'category'> }
   | { type: 'backlog/remove'; id: string }
@@ -35,6 +32,8 @@ export type Action =
   | { type: 'task/remove'; id: string }
   | { type: 'task/move'; id: string; day: Weekday }
   | { type: 'task/unschedule'; id: string }
+  | { type: 'task/repeat'; id: string; repeatingId: string }
+  | { type: 'task/stopRepeat'; id: string }
   | { type: 'week/review'; doneIds: string[]; nextStart: string }
   | { type: 'state/replace'; state: PlannerState }
 
@@ -43,9 +42,7 @@ export function newId(): string {
 }
 
 export function createWeek(start: string, repeating: RepeatingTask[]): Week {
-  const tasks = [...repeating]
-    .sort((a, b) => a.weekday - b.weekday)
-    .map((r) => taskFromRepeating(start, r))
+  const tasks = [...repeating].sort((a, b) => a.weekday - b.weekday).map((r) => taskFromRepeating(start, r))
   return { start, tasks, reviewed: false }
 }
 
@@ -127,32 +124,6 @@ export function plannerReducer(state: PlannerState, action: Action): PlannerStat
     case 'daily/remove':
       return { ...state, dailyTasks: state.dailyTasks.filter((t) => t.id !== action.id) }
 
-    case 'repeating/add': {
-      const { id, weekday, text, category } = action
-      const repeating: RepeatingTask = { id, weekday, text: text.trim(), category }
-      const next = { ...state, repeating: [...state.repeating, repeating] }
-      // Show it in the week being planned too, not just from next week on.
-      if (currentWeek(state).reviewed) return next
-      return withWeek(next, (w) => ({ ...w, tasks: [...w.tasks, taskFromRepeating(w.start, repeating)] }))
-    }
-    // Changes to a repeating task also apply to its copy in the week being
-    // planned, the same way adding one does. Reviewed weeks are left alone.
-    case 'repeating/update': {
-      const { weekday, ...rest } = trimmed(action.patch)
-      const next = { ...state, repeating: patchById(state.repeating, action.id, trimmed(action.patch)) }
-      if (currentWeek(state).reviewed) return next
-      const taskPatch: Partial<DayTask> = weekday === undefined ? rest : { ...rest, day: weekday }
-      return withWeek(next, (w) => ({
-        ...w,
-        tasks: w.tasks.map((t) => (t.repeatingId === action.id ? { ...t, ...taskPatch } : t)),
-      }))
-    }
-    case 'repeating/remove': {
-      const next = { ...state, repeating: state.repeating.filter((r) => r.id !== action.id) }
-      if (currentWeek(state).reviewed) return next
-      return withWeek(next, (w) => ({ ...w, tasks: w.tasks.filter((t) => t.repeatingId !== action.id) }))
-    }
-
     case 'backlog/add': {
       const { id, text, category } = action
       return { ...state, backlog: [...state.backlog, { id, text: text.trim(), category, carriedOver: false }] }
@@ -181,8 +152,16 @@ export function plannerReducer(state: PlannerState, action: Action): PlannerStat
       const task: DayTask = { id, day, text: text.trim(), category, done: false, carriedOver: false }
       return withWeek(state, (w) => ({ ...w, tasks: [...w.tasks, task] }))
     }
-    case 'task/update':
-      return withWeek(state, (w) => ({ ...w, tasks: patchById(w.tasks, action.id, trimmed(action.patch)) }))
+    case 'task/update': {
+      const patch = trimmed(action.patch)
+      const next = withWeek(state, (w) => ({ ...w, tasks: patchById(w.tasks, action.id, patch) }))
+      // Renaming or recategorising a weekly task changes it for future weeks too.
+      const ruleId = currentWeek(state).tasks.find((t) => t.id === action.id)?.repeatingId
+      const { text, category } = patch
+      if (!ruleId || (text === undefined && category === undefined)) return next
+      const rulePatch = { ...(text !== undefined && { text }), ...(category !== undefined && { category }) }
+      return { ...next, repeating: patchById(next.repeating, ruleId, rulePatch) }
+    }
     case 'task/remove':
       return withWeek(state, (w) => ({ ...w, tasks: w.tasks.filter((t) => t.id !== action.id) }))
     case 'task/move': {
@@ -200,6 +179,31 @@ export function plannerReducer(state: PlannerState, action: Action): PlannerStat
       const item: BacklogItem = { id: task.id, text: task.text, category: task.category, carriedOver: task.carriedOver }
       const next = withWeek(state, (w) => ({ ...w, tasks: w.tasks.filter((t) => t.id !== task.id) }))
       return { ...next, backlog: [item, ...next.backlog] }
+    }
+
+    case 'task/repeat': {
+      // Repeats on the weekday the task is on now, from next week onwards.
+      const task = currentWeek(state).tasks.find((t) => t.id === action.id)
+      if (!task || task.repeatingId) return state
+      const rule: RepeatingTask = {
+        id: action.repeatingId,
+        weekday: task.day,
+        text: task.text,
+        category: task.category,
+      }
+      const next = withWeek(state, (w) => ({ ...w, tasks: patchById(w.tasks, task.id, { repeatingId: rule.id }) }))
+      return { ...next, repeating: [...next.repeating, rule] }
+    }
+    case 'task/stopRepeat': {
+      // This week's copy stays; it just stops coming back.
+      const task = currentWeek(state).tasks.find((t) => t.id === action.id)
+      if (!task?.repeatingId) return state
+      const ruleId = task.repeatingId
+      const next = withWeek(state, (w) => ({
+        ...w,
+        tasks: w.tasks.map((t) => (t.repeatingId === ruleId ? { ...t, repeatingId: undefined } : t)),
+      }))
+      return { ...next, repeating: next.repeating.filter((r) => r.id !== ruleId) }
     }
 
     case 'week/review':

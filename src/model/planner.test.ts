@@ -57,27 +57,39 @@ describe('day tasks and the backlog', () => {
 })
 
 describe('repeating tasks', () => {
-  it('adds a new repeating task to the week being planned', () => {
-    const state = run([{ type: 'repeating/add', id: 'r1', weekday: 3, text: 'PS due', category: 'school' }])
-    expect(tasksOn(state, 3)).toEqual(['PS due'])
+  const repeating = () =>
+    run([
+      { type: 'task/add', id: 't1', day: 3, text: 'PS due', category: 'school' },
+      { type: 'task/repeat', id: 't1', repeatingId: 'r1' },
+    ])
+
+  it('turns a task into a weekly rule on its current weekday', () => {
+    const state = repeating()
+    expect(state.repeating).toEqual([{ id: 'r1', weekday: 3, text: 'PS due', category: 'school' }])
+    expect(currentWeek(state).tasks).toMatchObject([{ id: 't1', repeatingId: 'r1' }])
   })
 
-  it('carries edits and removal through to this week’s copy', () => {
-    let state = run([
-      { type: 'repeating/add', id: 'r1', weekday: 3, text: 'PS due', category: 'school' },
-      { type: 'repeating/update', id: 'r1', patch: { weekday: 4, text: 'Problem set due' } },
-    ])
-    expect(tasksOn(state, 3)).toEqual([])
-    expect(tasksOn(state, 4)).toEqual(['Problem set due'])
-    state = plannerReducer(state, { type: 'repeating/remove', id: 'r1' })
-    expect(currentWeek(state).tasks).toEqual([])
+  it('carries renames and category changes through to the rule', () => {
+    const state = plannerReducer(repeating(), {
+      type: 'task/update',
+      id: 't1',
+      patch: { text: 'Problem set due', category: 'job' },
+    })
+    expect(state.repeating).toMatchObject([{ text: 'Problem set due', category: 'job', weekday: 3 }])
+  })
+
+  it('stops repeating without removing this week’s copy', () => {
+    const state = plannerReducer(repeating(), { type: 'task/stopRepeat', id: 't1' })
+    expect(state.repeating).toEqual([])
+    expect(currentWeek(state).tasks).toMatchObject([{ id: 't1', text: 'PS due', repeatingId: undefined }])
   })
 })
 
 describe('weekly review', () => {
   const planned = () =>
     run([
-      { type: 'repeating/add', id: 'r1', weekday: 3, text: 'PS due', category: 'school' },
+      { type: 'task/add', id: 'ps', day: 3, text: 'PS due', category: 'school' },
+      { type: 'task/repeat', id: 'ps', repeatingId: 'r1' },
       { type: 'task/add', id: 'done', day: 0, text: 'Tailor resume', category: 'job' },
       { type: 'task/add', id: 'open', day: 1, text: 'Coffee chat', category: 'job' },
       { type: 'backlog/add', id: 'b1', text: 'Already waiting', category: 'job' },

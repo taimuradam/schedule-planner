@@ -1,0 +1,351 @@
+/* The sheet as an editor. Sizes stay in em, so the page keeps the printout's
+   proportions at any width; the paper is always light, so colors here are
+   fixed rather than following the app's dark mode. Editing controls float
+   (absolute positioning) where they could otherwise change line heights. */
+
+.page-paper {
+  container-type: inline-size;
+  /* 0.4in margins on an 11in-wide page. */
+  padding: 3.636%;
+  background: #fff;
+  border-radius: 4px;
+  box-shadow:
+    0 0 0 1px rgb(0 0 0 / 0.08),
+    0 2px 16px rgb(0 0 0 / 0.08);
+}
+
+.sheet.is-editing {
+  --edit: #2c5aa0;
+  --edit-soft: #edf2fa;
+  --edit-hint: #8b95a5;
+
+  width: 100%;
+  height: auto;
+  aspect-ratio: 10.2 / 7.62;
+  /* 10pt on a 10.2in-wide sheet, scaled to whatever width the page has. */
+  font-size: calc(var(--fit, 1) * 1.3617cqw);
+}
+
+.sheet.is-editing button {
+  font: inherit;
+  color: inherit;
+}
+
+/* Category colors on screen only; the printout stays black and white. */
+.is-editing .sheet-tag-job,
+.sheet .chip.tag-job {
+  --tag: #2c5aa0;
+  --tag-bg: #e5edf8;
+}
+
+.is-editing .sheet-tag-side,
+.sheet .chip.tag-side {
+  --tag: #1d7357;
+  --tag-bg: #e0f2ea;
+}
+
+.is-editing .sheet-tag-school,
+.sheet .chip.tag-school {
+  --tag: #8a5a0b;
+  --tag-bg: #f8ecd6;
+}
+
+.is-editing .sheet-tag {
+  border-color: var(--tag);
+  background: var(--tag-bg);
+  color: var(--tag);
+}
+
+/* Lines you can click */
+
+.is-editing .is-editable {
+  position: relative;
+}
+
+.is-editing .is-editable:hover,
+.is-editing tr.is-editable:hover th {
+  background: #f7f9fc;
+}
+
+.line-text {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0.2em;
+  background: none;
+  text-align: left;
+  overflow-wrap: break-word;
+  cursor: text;
+}
+
+.line-text:hover {
+  background: var(--edit-soft);
+}
+
+.line-button {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  min-height: 1.5em;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  text-align: left;
+  cursor: text;
+}
+
+.line-hint {
+  font-size: 0.85em;
+  color: var(--edit-hint);
+  opacity: 0;
+}
+
+.line-hint::before {
+  content: '+ ';
+}
+
+.line-button:hover .line-hint,
+.line-button:focus-visible .line-hint,
+.sheet-lines:hover .line-hint,
+.sheet-row-blank:hover .line-hint,
+.sheet-row-blank:hover + .sheet-row-blank .line-hint {
+  opacity: 1;
+}
+
+.is-editing .sheet-lines {
+  cursor: text;
+}
+
+.is-editing .sheet-lines .line-button {
+  height: 1.85em;
+  border-bottom: 0.5pt solid var(--rule-faint);
+}
+
+.section-add {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3em;
+  padding: 0 0.3em;
+  border: none;
+  border-radius: 0.2em;
+  background: none;
+  font-size: 0.75em !important;
+  line-height: 1.6;
+  color: var(--edit) !important;
+  cursor: pointer;
+}
+
+.section-add:hover {
+  background: var(--edit-soft);
+}
+
+.more-button {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.6em;
+  height: 1.6em;
+  padding: 0;
+  border: 0.5pt solid #cfd5df;
+  border-radius: 0.3em;
+  background: #fff;
+  color: #4a5568;
+  opacity: 0;
+  transform: translateY(-50%);
+  cursor: pointer;
+}
+
+.is-editable:hover .more-button,
+.is-editable:focus-within .more-button,
+.more-button[aria-expanded='true'] {
+  opacity: 1;
+}
+
+.more-button:hover {
+  background: var(--edit-soft);
+}
+
+@media (hover: none) {
+  .more-button {
+    opacity: 1;
+  }
+}
+
+/* Day tasks: the tick box turns into a drag grip on hover. */
+
+.is-editing .sheet-task.is-editable {
+  cursor: grab;
+}
+
+.drag-box {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  margin-top: 0.05em;
+}
+
+.drag-box .icon {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  color: #6b7686;
+  opacity: 0;
+}
+
+.sheet-task.is-editable:hover .drag-box .sheet-box {
+  border-color: transparent;
+}
+
+.sheet-task.is-editable:hover .drag-box .icon {
+  opacity: 1;
+}
+
+.sheet-task.is-dragging {
+  opacity: 0.35;
+}
+
+.repeat-mark {
+  display: inline-flex;
+  margin-left: 0.35em;
+  color: var(--edit-hint);
+  vertical-align: -0.05em;
+}
+
+.is-editing .sheet-day {
+  transition: background-color 0.12s;
+}
+
+.is-editing .sheet-day.is-drop-target {
+  outline: 2px dashed var(--edit);
+  outline-offset: -2px;
+  background: var(--edit-soft);
+}
+
+/* Daily rows */
+
+.sheet-daily-label {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.35em;
+  padding-right: 1.8em;
+}
+
+.sheet-daily-label .sheet-tag {
+  margin-right: 0 !important;
+}
+
+tr.is-hidden .sheet-daily-label > :not(.more-button),
+tr.is-hidden .sheet-box {
+  opacity: 0.4;
+}
+
+.hidden-note {
+  flex: none;
+  font-size: 0.75em;
+  font-style: italic;
+  color: #6b7686;
+}
+
+/* The line you're typing on */
+
+.is-writing {
+  position: relative;
+  z-index: 1;
+  border-radius: 0.25em;
+  outline: 1.5px solid var(--edit);
+  outline-offset: 1px;
+  background: #fff;
+}
+
+.sheet .line-editor {
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
+  width: 100%;
+}
+
+.sheet .line-editor-chips-below {
+  flex-wrap: wrap;
+  padding-bottom: 0.15em;
+}
+
+.sheet .line-editor-chips-below .chips {
+  width: 100%;
+}
+
+.sheet .line-editor-input {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  outline: none;
+}
+
+.sheet .line-editor-input::placeholder {
+  color: #a3abb8;
+}
+
+.chips {
+  display: flex;
+  flex: none;
+  gap: 0.25em;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.55em;
+  height: 1.55em;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 0.3em;
+  background: transparent;
+  font-size: 0.75em;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--tag);
+  cursor: pointer;
+}
+
+.chip:hover {
+  background: var(--tag-bg);
+}
+
+.chip[aria-pressed='true'],
+.chip[aria-checked='true'] {
+  border-color: var(--tag);
+  background: var(--tag-bg);
+}
+
+/* Sunday steps: dim the parts of the page you aren't working on. */
+
+.sheet[data-focus] [data-section] {
+  transition: opacity 0.2s;
+}
+
+.sheet[data-focus='goals'] [data-section]:not([data-section='goals']),
+.sheet[data-focus='daily'] [data-section]:not([data-section='daily']),
+.sheet[data-focus='days'] [data-section]:not([data-section='days']) {
+  opacity: 0.25;
+}
+
+.sheet[data-focus='goals'] [data-section='goals'],
+.sheet[data-focus='daily'] [data-section='daily'],
+.sheet[data-focus='days'] [data-section='days'] {
+  border-radius: 0.4em;
+  outline: 2px solid #b7c9ea;
+  outline-offset: 0.45em;
+}

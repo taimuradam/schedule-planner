@@ -15,8 +15,3 @@ export function category(id: CategoryId): Category {
 export function isCategoryId(value: unknown): value is CategoryId {
   return typeof value === 'string' && (CATEGORY_IDS as string[]).includes(value)
 }
-
-export function nextCategory(id: CategoryId): CategoryId {
-  const i = CATEGORIES.findIndex((c) => c.id === id)
-  return CATEGORIES[(i + 1) % CATEGORIES.length].id
-}
