@@ -1,6 +1,6 @@
 import { formatDays, WEEKDAY_LETTER, WEEKDAY_LONG, WEEKDAY_SHORT, WEEKDAYS } from '../model/dates'
 import { currentWeek, groupOf, newId } from '../model/planner'
-import type { BacklogItem, CategoryId, DailyTask, DayTask, FocusItem, Goal, Weekday } from '../model/types'
+import type { BacklogItem, DailyTask, DayTask, Goal, Weekday } from '../model/types'
 import { Icon } from '../components/ui'
 import { usePlanner, usePlannerDispatch } from '../state/contexts'
 import { useEditor } from './editorContext'
@@ -229,76 +229,33 @@ export function BacklogMenu({ item, anchor, onClose, onRename }: MenuProps<Backl
   )
 }
 
-/** Category, rename and delete: all a goal or a top-3 item needs. */
-function PlainMenu({
-  text,
-  category,
-  anchor,
-  onClose,
-  onRename,
-  onCategory,
-  onDelete,
-}: {
-  text: string
-  category: CategoryId
-  anchor: HTMLElement
-  onClose: () => void
-  onRename: () => void
-  onCategory: (category: CategoryId) => void
-  onDelete: () => void
-}) {
-  const then = closeAfter(onClose)
-  return (
-    <Menu anchor={anchor} label={`Options for ${text}`} onClose={onClose}>
-      <MenuCategories value={category} onChange={(c) => then(() => onCategory(c))()} />
-      <MenuDivider />
-      <MenuItem icon="pencil" onSelect={then(onRename)}>
-        Rename
-      </MenuItem>
-      <MenuItem icon="trash" danger onSelect={then(onDelete)}>
-        Delete
-      </MenuItem>
-    </Menu>
-  )
-}
-
 export function GoalMenu({ item: goal, anchor, onClose, onRename }: MenuProps<Goal>) {
   const state = usePlanner()
   const dispatch = usePlannerDispatch()
   const editor = useEditor()
-  return (
-    <PlainMenu
-      text={goal.text}
-      category={goal.category}
-      anchor={anchor}
-      onClose={onClose}
-      onRename={onRename}
-      onCategory={(category) => dispatch({ type: 'goal/update', id: goal.id, patch: { category } })}
-      onDelete={() => {
-        dispatch({ type: 'goal/remove', id: goal.id })
-        editor.notify(`Deleted “${goal.text}”.`, state)
-      }}
-    />
-  )
-}
+  const then = closeAfter(onClose)
 
-export function FocusMenu({ item, anchor, onClose, onRename }: MenuProps<FocusItem>) {
-  const state = usePlanner()
-  const dispatch = usePlannerDispatch()
-  const editor = useEditor()
   return (
-    <PlainMenu
-      text={item.text}
-      category={item.category}
-      anchor={anchor}
-      onClose={onClose}
-      onRename={onRename}
-      onCategory={(category) => dispatch({ type: 'focus/update', id: item.id, patch: { category } })}
-      onDelete={() => {
-        dispatch({ type: 'focus/remove', id: item.id })
-        editor.notify(`Deleted “${item.text}”.`, state)
-      }}
-    />
+    <Menu anchor={anchor} label={`Options for ${goal.text}`} onClose={onClose}>
+      <MenuCategories
+        value={goal.category}
+        onChange={(category) => then(() => dispatch({ type: 'goal/update', id: goal.id, patch: { category } }))()}
+      />
+      <MenuDivider />
+      <MenuItem icon="pencil" onSelect={then(onRename)}>
+        Rename
+      </MenuItem>
+      <MenuItem
+        icon="trash"
+        danger
+        onSelect={then(() => {
+          dispatch({ type: 'goal/remove', id: goal.id })
+          editor.notify(`Deleted “${goal.text}”.`, state)
+        })}
+      >
+        Delete
+      </MenuItem>
+    </Menu>
   )
 }
 

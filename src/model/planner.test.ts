@@ -165,21 +165,6 @@ describe('due dates', () => {
   })
 })
 
-describe('top 3 this week', () => {
-  it('holds three at most, and is recorded in the review', () => {
-    let state = run([
-      { type: 'focus/add', id: 'a', text: 'Finish PS5', category: 'school' },
-      { type: 'focus/add', id: 'b', text: 'Apply to Stripe', category: 'job' },
-      { type: 'focus/add', id: 'c', text: 'Deploy MVP', category: 'side' },
-      { type: 'focus/add', id: 'd', text: 'One too many', category: 'side' },
-    ])
-    expect(currentWeek(state).focus.map((f) => f.text)).toEqual(['Finish PS5', 'Apply to Stripe', 'Deploy MVP'])
-    state = plannerReducer(state, { type: 'week/review', doneIds: ['b'], nextStart: '2026-10-26' })
-    expect(state.weeks[WEEK].focus.map((f) => f.done)).toEqual([false, true, false])
-    expect(currentWeek(state).focus).toEqual([])
-  })
-})
-
 describe('daily tasks', () => {
   it('start out on every day and can skip some', () => {
     let state = run([{ type: 'daily/add', id: 'd1', text: 'Apply to 3 jobs', category: 'job' }])

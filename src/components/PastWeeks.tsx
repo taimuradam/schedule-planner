@@ -73,7 +73,7 @@ function WeekRow({
   selected: boolean
   onSelect: (start: string) => void
 }) {
-  const { start, tasks, byCategory, focus, habits } = summary
+  const { start, tasks, byCategory, habits } = summary
   return (
     <button
       type="button"
@@ -101,14 +101,7 @@ function WeekRow({
           </span>
         ))}
       </span>
-      <span className="week-row-meta">
-        {focus.total > 0 && (
-          <span>
-            Top 3: {focus.done}/{focus.total}
-          </span>
-        )}
-        {habits && <span>Habits: {percent(habits)}%</span>}
-      </span>
+      <span className="week-row-meta">{habits && <span>Habits: {percent(habits)}%</span>}</span>
     </button>
   )
 }
@@ -124,7 +117,6 @@ function WeekPage({ week }: { week: Week }) {
     today,
     goalMonth: month,
     goals: goalsForMonth(state, month),
-    focus: week.focus,
     // The habits as they were that week, if they were ticked off in the review.
     dailyTasks: (week.habits ?? []).map((h) => ({ ...h, active: true })),
     tasks: week.tasks,

@@ -28,19 +28,17 @@ The screen shows the page exactly as it will print. You edit right on it:
 - **Drag tasks** between days, or to and from the **Backlog** drawer. Hold **⌥ Option** while you drop to put a copy on that day instead of moving it.
 - **Each day stays grouped by category** (J, S, H, P). Drop a task onto a particular spot in a list, guided by the blue line, and it stays exactly there from then on.
 - **Give backlog items a due date** from their **⋯** menu. They sort to the top of the backlog and show "due Thu", "due Oct 30" or "overdue", on screen and on paper. It's only a label; nothing moves on its own.
-- **Top 3 this week** sits under the monthly goals: up to three things that would make the week a win.
-- **Past weeks** shows every wrapped-up week: how much got done in each category, your Top 3, habit streaks, and the page itself with finished items crossed out.
+- **Past weeks** shows every wrapped-up week: how much got done in each category, habit streaks, and the page itself with finished items crossed out.
 
 ## The Sunday routine
 
 Click **Plan next week** (or **Plan the week** midweek). A step bar walks you through the page one part at a time:
 
-1. **Wrap up:** tick what you crossed off on paper, including your Top 3 and, if you like, your habit boxes for streaks. Anything unfinished moves to the top of the backlog. Weekly tasks come back on their own, so they don't.
+1. **Wrap up:** tick what you crossed off on paper and, if you like, your habit boxes for streaks. Anything unfinished moves to the top of the backlog. Weekly tasks come back on their own, so they don't.
 2. **Goals:** check this month's goals. In a new month you can copy last month's.
-3. **Top 3:** pick up to three priorities for the week.
-4. **Every day:** add, change or hide daily tasks. A habit you skip on some days, like weekends, can be set to just those days from its **⋯** menu; the days it's skipped print a dash instead of a box.
-5. **Plan days:** the backlog opens beside the page; drag tasks in or type them straight into a day.
-6. **Print:** the printout is always US Letter, landscape, on one page. On a busy week the text shrinks a little so it still fits.
+3. **Every day:** add, change or hide daily tasks. A habit you skip on some days, like weekends, can be set to just those days from its **⋯** menu; the days it's skipped print a dash instead of a box.
+4. **Plan days:** the backlog opens beside the page; drag tasks in or type them straight into a day.
+5. **Print:** the printout is always US Letter, landscape, on one page. On a busy week the text shrinks a little so it still fits.
 
 Everything saves in your browser as you go, and nothing is sent anywhere. Because clearing your browser data clears the planner too, starting a new week also downloads a backup file (you can turn that off in the wrap-up step), and the **⋯** menu shows when you last backed up. If saved data ever can't be read, the planner sets it aside instead of overwriting it and offers it as a download.
 

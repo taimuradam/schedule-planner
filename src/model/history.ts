@@ -11,7 +11,6 @@ export interface WeekSummary {
   start: string
   tasks: Tally
   byCategory: Record<CategoryId, Tally>
-  focus: Tally
   /** Missing when habits weren't ticked off in that week's review. */
   habits?: Tally
 }
@@ -36,7 +35,7 @@ export function summarizeWeek(week: Week): WeekSummary {
     done: week.habits.reduce((n, h) => n + h.done.filter((d) => h.days.includes(d)).length, 0),
     total: week.habits.reduce((n, h) => n + h.days.length, 0),
   }
-  return { start: week.start, tasks: tally(week.tasks), byCategory, focus: tally(week.focus), ...(habits && { habits }) }
+  return { start: week.start, tasks: tally(week.tasks), byCategory, ...(habits && { habits }) }
 }
 
 export interface Streak {

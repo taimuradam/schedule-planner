@@ -25,12 +25,14 @@ describe('parseState', () => {
     expect(parseState(old)?.dailyTasks[0].days).toEqual([0, 1, 2, 3, 4, 5, 6])
   })
 
-  it('gives weeks saved before the top 3 an empty one', () => {
+  it('drops the old Top 3 list from weeks saved while it existed', () => {
     const state = valid()
-    const { focus, ...oldWeek } = state.weeks[state.currentWeek]
-    expect(focus).toEqual([])
-    const read = parseState({ ...state, weeks: { [state.currentWeek]: oldWeek } })
-    expect(read?.weeks[state.currentWeek].focus).toEqual([])
+    const week = state.weeks[state.currentWeek]
+    const saved = {
+      ...state,
+      weeks: { [state.currentWeek]: { ...week, focus: [{ id: 'f', text: 'Ship', category: 'side', done: false }] } },
+    }
+    expect(parseState(saved)?.weeks[state.currentWeek]).toEqual(week)
   })
 
   it('rejects things that are not planner data', () => {

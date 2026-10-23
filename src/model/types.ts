@@ -63,14 +63,6 @@ export interface DayTask {
   placed?: boolean
 }
 
-/** One of the week's top three priorities, printed under the monthly goals. */
-export interface FocusItem {
-  id: string
-  text: string
-  category: CategoryId
-  done: boolean
-}
-
 /** How a habit went in a reviewed week, kept whole so history survives later edits. */
 export interface HabitLog {
   id: string
@@ -87,7 +79,6 @@ export interface Week {
   start: string
   tasks: DayTask[]
   reviewed: boolean
-  focus: FocusItem[]
   /** Recorded during the review; missing if habits weren't ticked off. */
   habits?: HabitLog[]
 }

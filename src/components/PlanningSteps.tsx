@@ -46,7 +46,6 @@ export function PlanningSteps({
 
   const hints: Record<Exclude<Step, 'wrapup'>, string> = {
     goals: `These print at the top of every week in ${month}. Click a goal to change it, or a blank line to add one.`,
-    focus: 'Pick up to three things that would make this week a win. They print under your goals.',
     daily: 'Each gets a row of seven tick boxes. Click one to change it, or a blank line to add one.',
     days: "Drag tasks in from the backlog, or click a day's blank lines and type. Add #j, #s, #h or #p to set the category.",
     print: "That's the week. Print it and stick it on the fridge.",
@@ -131,7 +130,7 @@ function WrapUp({ onNext }: { onNext: () => void }) {
   const dispatch = usePlannerDispatch()
   const editor = useEditor()
   const week = currentWeek(state)
-  const [done, setDone] = useState(() => new Set([...week.tasks, ...week.focus].filter((t) => t.done).map((t) => t.id)))
+  const [done, setDone] = useState(() => new Set(week.tasks.filter((t) => t.done).map((t) => t.id)))
   const habitsToTick = state.dailyTasks.filter((t) => t.active)
   const [habitDone, setHabitDone] = useState<Record<string, Weekday[]>>(() =>
     Object.fromEntries((week.habits ?? []).map((h) => [h.id, h.done])),
@@ -199,16 +198,10 @@ function WrapUp({ onNext }: { onNext: () => void }) {
         </p>
       </div>
 
-      {week.tasks.length === 0 && week.focus.length === 0 ? (
+      {week.tasks.length === 0 ? (
         <p className="step-empty">Nothing was planned this week.</p>
       ) : (
         <div className="wrapup-days">
-          {week.focus.length > 0 && (
-            <div className="wrapup-day" role="group" aria-label="Top 3">
-              <h3 className="wrapup-legend">Top 3</h3>
-              {week.focus.map(checkRow)}
-            </div>
-          )}
           {WEEKDAYS.map((day) => {
             const tasks = week.tasks.filter((t) => t.day === day)
             if (tasks.length === 0) return null

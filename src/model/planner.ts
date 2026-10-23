@@ -5,7 +5,6 @@ import type {
   CategoryId,
   DailyTask,
   DayTask,
-  FocusItem,
   Goal,
   HabitLog,
   PlannerState,
@@ -26,9 +25,6 @@ export type Action =
   | { type: 'daily/add'; id: string; text: string; category: CategoryId }
   | { type: 'daily/update'; id: string; patch: Edit<DailyTask, 'text' | 'category' | 'active' | 'days'> }
   | { type: 'daily/remove'; id: string }
-  | { type: 'focus/add'; id: string; text: string; category: CategoryId }
-  | { type: 'focus/update'; id: string; patch: Edit<FocusItem, 'text' | 'category' | 'done'> }
-  | { type: 'focus/remove'; id: string }
   | { type: 'backlog/add'; id: string; text: string; category: CategoryId }
   | { type: 'backlog/update'; id: string; patch: Edit<BacklogItem, 'text' | 'category' | 'due'> }
   | { type: 'backlog/remove'; id: string }
@@ -50,9 +46,6 @@ export type Action =
   | { type: 'backup/saved'; at: string }
   | { type: 'state/replace'; state: PlannerState }
 
-/** The week's top priorities: three at most, or they stop being priorities. */
-export const FOCUS_LIMIT = 3
-
 export function newId(): string {
   return crypto.randomUUID()
 }
@@ -61,7 +54,7 @@ export function createWeek(start: string, repeating: RepeatingTask[]): Week {
   const tasks = repeating
     .flatMap((r) => r.weekdays.map((day) => taskFromRepeating(start, r, day)))
     .sort((a, b) => a.day - b.day || rank(a.category) - rank(b.category))
-  return { start, tasks, reviewed: false, focus: [] }
+  return { start, tasks, reviewed: false }
 }
 
 function taskFromRepeating(weekStart: string, r: RepeatingTask, day: Weekday): DayTask {
@@ -219,17 +212,6 @@ export function plannerReducer(state: PlannerState, action: Action): PlannerStat
     }
     case 'daily/remove':
       return { ...state, dailyTasks: state.dailyTasks.filter((t) => t.id !== action.id) }
-
-    case 'focus/add': {
-      const { id, text, category } = action
-      if (currentWeek(state).focus.length >= FOCUS_LIMIT) return state
-      const item: FocusItem = { id, text: text.trim(), category, done: false }
-      return withWeek(state, (w) => ({ ...w, focus: [...w.focus, item] }))
-    }
-    case 'focus/update':
-      return withWeek(state, (w) => ({ ...w, focus: patchById(w.focus, action.id, trimmed(action.patch)) }))
-    case 'focus/remove':
-      return withWeek(state, (w) => ({ ...w, focus: w.focus.filter((f) => f.id !== action.id) }))
 
     case 'backlog/add': {
       const { id, text, category } = action
@@ -409,7 +391,6 @@ function reviewWeek(state: PlannerState, doneIds: string[], nextStart: string, h
   const week = currentWeek(state)
   const done = new Set(doneIds)
   const tasks = week.tasks.map((t) => ({ ...t, done: done.has(t.id) }))
-  const focus = week.focus.map((f) => ({ ...f, done: done.has(f.id) }))
 
   // Repeating tasks come back next week on their own, so they don't roll over.
   // A task on several days rolls over once, not once per day.
@@ -431,7 +412,7 @@ function reviewWeek(state: PlannerState, doneIds: string[], nextStart: string, h
   return {
     ...state,
     backlog: [...rolled, ...state.backlog],
-    weeks: { ...state.weeks, [week.start]: { ...week, tasks, focus, reviewed: true, ...(habits && { habits }) }, [start]: nextWeek },
+    weeks: { ...state.weeks, [week.start]: { ...week, tasks, reviewed: true, ...(habits && { habits }) }, [start]: nextWeek },
     currentWeek: start,
   }
 }

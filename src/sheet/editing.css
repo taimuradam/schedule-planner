@@ -359,14 +359,12 @@ tr.is-hidden .sheet-box {
 }
 
 .sheet[data-focus='goals'] [data-section]:not([data-section='goals']),
-.sheet[data-focus='focus'] [data-section]:not([data-section='focus']),
 .sheet[data-focus='daily'] [data-section]:not([data-section='daily']),
 .sheet[data-focus='days'] [data-section]:not([data-section='days']) {
   opacity: 0.25;
 }
 
 .sheet[data-focus='goals'] [data-section='goals'],
-.sheet[data-focus='focus'] [data-section='focus'],
 .sheet[data-focus='daily'] [data-section='daily'],
 .sheet[data-focus='days'] [data-section='days'] {
   border-radius: 0.4em;

@@ -109,7 +109,6 @@ export default function App() {
       today: toISODate(today),
       goalMonth: goalMonthOf(start),
       goals: currentGoals(state),
-      focus: currentWeek(state).focus,
       dailyTasks: state.dailyTasks,
       tasks,
     }

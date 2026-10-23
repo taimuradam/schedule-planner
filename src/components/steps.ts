@@ -4,7 +4,6 @@ import type { SheetFocus } from '../sheet/Sheet'
 export const STEPS = [
   { id: 'wrapup', label: 'Wrap up' },
   { id: 'goals', label: 'Goals' },
-  { id: 'focus', label: 'Top 3' },
   { id: 'daily', label: 'Every day' },
   { id: 'days', label: 'Plan days' },
   { id: 'print', label: 'Print' },
@@ -14,6 +13,6 @@ export type Step = (typeof STEPS)[number]['id']
 
 /** The part of the page each step works on. */
 export function stepFocus(step: Step | null): SheetFocus | undefined {
-  if (step === 'goals' || step === 'focus' || step === 'daily' || step === 'days') return step
+  if (step === 'goals' || step === 'daily' || step === 'days') return step
   return undefined
 }

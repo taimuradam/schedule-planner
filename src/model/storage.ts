@@ -34,14 +34,13 @@ function readDaily(v: unknown): Obj | null {
 
 const isDone = (v: unknown) => isItem(v) && typeof v.done === 'boolean'
 
-/** Weeks saved before the top 3 existed get an empty one. */
 function readWeek(v: unknown): Week | null {
   if (!isObj(v) || !isStr(v.start) || !DATE_RE.test(v.start) || typeof v.reviewed !== 'boolean') return null
   if (!Array.isArray(v.tasks) || !v.tasks.every((t) => isDone(t) && isWeekday((t as Obj).day))) return null
-  const focus = v.focus ?? []
-  if (!Array.isArray(focus) || !focus.every(isDone)) return null
   if (v.habits !== undefined && !(Array.isArray(v.habits) && v.habits.every(isItem))) return null
-  return { ...v, focus } as unknown as Week
+  // Weeks saved while the planner had a "Top 3" section carry a `focus` list; it's dropped.
+  const { focus: _dropped, ...week } = v
+  return week as unknown as Week
 }
 
 /**

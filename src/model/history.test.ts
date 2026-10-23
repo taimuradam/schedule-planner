@@ -8,7 +8,6 @@ const actions: Action[] = [
   { type: 'daily/update', id: 'gym', patch: { days: [0, 2, 4] } },
   { type: 'task/add', id: 'a', day: 0, text: 'Apply', category: 'job' },
   { type: 'task/add', id: 'b', day: 1, text: 'PS5', category: 'school' },
-  { type: 'focus/add', id: 'f', text: 'Ship it', category: 'side' },
 ]
 const gym = (done: number[]): HabitLog[] => [
   { id: 'gym', text: 'Gym', category: 'personal', days: [0, 2, 4], done: done as HabitLog['done'] },
@@ -24,13 +23,12 @@ function reviewed(...weeks: { done: string[]; habits?: HabitLog[] }[]): PlannerS
 }
 
 describe('summarizeWeek', () => {
-  it('counts tasks, categories, the top 3 and habits', () => {
-    const [week] = pastWeeks(reviewed({ done: ['a', 'f'], habits: gym([0, 4]) }))
+  it('counts tasks, categories and habits', () => {
+    const [week] = pastWeeks(reviewed({ done: ['a'], habits: gym([0, 4]) }))
     const summary = summarizeWeek(week)
     expect(summary.tasks).toEqual({ done: 1, total: 2 })
     expect(summary.byCategory.job).toEqual({ done: 1, total: 1 })
     expect(summary.byCategory.school).toEqual({ done: 0, total: 1 })
-    expect(summary.focus).toEqual({ done: 1, total: 1 })
     expect(summary.habits).toEqual({ done: 2, total: 3 })
   })
 

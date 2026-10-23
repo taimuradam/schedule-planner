@@ -130,17 +130,6 @@
   gap: 2.2em;
 }
 
-.sheet-left {
-  display: flex;
-  flex-direction: column;
-  gap: 0.9em;
-}
-
-.sheet-row .sheet-row-text {
-  flex: 1;
-  min-width: 0;
-}
-
 .sheet-row {
   display: flex;
   align-items: center;
@@ -302,8 +291,7 @@
   color: #2f7a4a;
 }
 
-.sheet .is-done .sheet-task-text,
-.sheet .is-done .sheet-row-text {
+.sheet .is-done .sheet-task-text {
   color: #8a8a8a;
   text-decoration: line-through;
 }

@@ -6,10 +6,10 @@ import { useContext, useState } from 'react'
 import { Icon } from '../components/ui'
 import { LineEditor } from '../editor/LineEditor'
 import { MoreButton } from '../editor/Menu'
-import { DailyMenu, FocusMenu, GoalMenu, TaskMenu } from '../editor/menus'
+import { DailyMenu, GoalMenu, TaskMenu } from '../editor/menus'
 import { formatDays, monthName, previousMonth, WEEKDAY_LONG } from '../model/dates'
-import { FOCUS_LIMIT, currentWeek, goalsForMonth, newId } from '../model/planner'
-import type { CategoryId, DailyTask, DayTask, FocusItem, Goal, Weekday } from '../model/types'
+import { goalsForMonth, newId } from '../model/planner'
+import type { CategoryId, DailyTask, DayTask, Goal, Weekday } from '../model/types'
 import { usePlanner, usePlannerDispatch } from '../state/contexts'
 import { blanks, BLANK_DAY_LINES, dayDropId, DropSpotContext, slotDropId, useLine, type DragData } from './lines'
 import { Box, BoxCells, DayHead, DueTag, Tag } from './parts'
@@ -103,63 +103,6 @@ export function AddGoalLine({ month, onClose }: { month: string; onClose: () => 
         label={`New ${monthName(month)} goal`}
         placeholder="Land 5 first-round interviews"
         onSubmit={(text, category) => dispatch({ type: 'goal/add', id: newId(), month, text, category })}
-        onClose={onClose}
-      />
-    </li>
-  )
-}
-
-export function EditableFocus({ item }: { item: FocusItem }) {
-  const dispatch = usePlannerDispatch()
-  const line = useLine()
-
-  if (line.renaming) {
-    return (
-      <li className="sheet-row is-writing">
-        <LineEditor
-          initialText={item.text}
-          initialCategory={item.category}
-          label="Edit priority"
-          placeholder="Priority"
-          onSubmit={(text, category) => {
-            if (changed(item, text, category))
-              dispatch({ type: 'focus/update', id: item.id, patch: { text, category } })
-          }}
-          onClose={line.stopRename}
-        />
-      </li>
-    )
-  }
-
-  return (
-    <>
-      <li className="sheet-row is-editable" onContextMenu={line.onContextMenu}>
-        <Box />
-        <button type="button" className="line-text" onClick={line.startRename}>
-          {item.text}
-        </button>
-        <Tag id={item.category} />
-        <MoreButton label={`Options for ${item.text}`} open={Boolean(line.menuAnchor)} onOpen={line.openMenu} />
-      </li>
-      {line.menuAnchor && (
-        <FocusMenu item={item} anchor={line.menuAnchor} onClose={line.closeMenu} onRename={line.startRename} />
-      )}
-    </>
-  )
-}
-
-export function AddFocusLine({ onClose }: { onClose: () => void }) {
-  const state = usePlanner()
-  const dispatch = usePlannerDispatch()
-  // Stops offering another line once the third priority is in.
-  const room = FOCUS_LIMIT - currentWeek(state).focus.length
-  return (
-    <li className="sheet-row is-writing">
-      <LineEditor
-        repeat={room > 1}
-        label="New priority for this week"
-        placeholder="Finish problem set 5"
-        onSubmit={(text, category) => dispatch({ type: 'focus/add', id: newId(), text, category })}
         onClose={onClose}
       />
     </li>

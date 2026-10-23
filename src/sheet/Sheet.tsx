@@ -1,13 +1,10 @@
 import { useState, type CSSProperties, type Ref } from 'react'
 import { CATEGORIES } from '../model/categories'
-import { FOCUS_LIMIT } from '../model/planner'
 import { dayOfMonth, formatWeekRange, monthName, WEEKDAY_LETTER, WEEKDAYS } from '../model/dates'
-import type { DailyTask, DayTask, FocusItem, Goal, Weekday } from '../model/types'
+import type { DailyTask, DayTask, Goal, Weekday } from '../model/types'
 import {
   AddGoalLine,
   AddDailyRow,
-  AddFocusLine,
-  EditableFocus,
   CopyGoalsButton,
   EditableDailyRow,
   EditableDay,
@@ -25,7 +22,6 @@ export interface SheetData {
   today: string
   goalMonth: string
   goals: Goal[]
-  focus: FocusItem[]
   dailyTasks: DailyTask[]
   /** Looking back at a past week: cross off what got done. */
   showDone?: boolean
@@ -35,7 +31,7 @@ export interface SheetData {
 }
 
 /** Which part of the page the Sunday steps are pointing at. */
-export type SheetFocus = 'goals' | 'focus' | 'daily' | 'days'
+export type SheetFocus = 'goals' | 'daily' | 'days'
 
 /**
  * The page, laid out in physical units for US Letter landscape. The same
@@ -83,14 +79,9 @@ export function Sheet({
         </header>
 
         <div className="sheet-top">
-          <div className="sheet-left">
-            <section className="sheet-goals" data-section="goals">
-              <GoalList goals={data.goals} month={goalMonth} editing={editing} />
-            </section>
-            <section className="sheet-focus" data-section="focus">
-              <FocusList focus={data.focus} editing={editing} showDone={data.showDone} />
-            </section>
-          </div>
+          <section className="sheet-goals" data-section="goals">
+            <GoalList goals={data.goals} month={goalMonth} editing={editing} />
+          </section>
 
           <section className="sheet-daily" data-section="daily">
             <DailyTable weekStart={weekStart} dailyTasks={dailyTasks} editing={editing} ticks={data.habitTicks} />
@@ -143,37 +134,6 @@ function GoalList({ goals, month, editing }: { goals: Goal[]; month: string; edi
         {blanks(MIN_GOAL_ROWS - rows).map((i) => (
           <li key={`blank-${i}`} className="sheet-row sheet-row-blank">
             {editing && i === 0 && <SectionAddButton label="Add a goal" onClick={() => setAdding(true)} fill />}
-          </li>
-        ))}
-      </ol>
-    </>
-  )
-}
-
-function FocusList({ focus, editing, showDone }: { focus: FocusItem[]; editing: boolean; showDone?: boolean }) {
-  const [adding, setAdding] = useState(false)
-  const rows = focus.length + (adding ? 1 : 0)
-
-  return (
-    <>
-      <h2 className="sheet-label">Top 3 this week</h2>
-      <ol className="sheet-goal-list">
-        {focus.map((f) =>
-          editing ? (
-            <EditableFocus key={f.id} item={f} />
-          ) : (
-            <li key={f.id} className={`sheet-row${showDone && f.done ? ' is-done' : ''}`}>
-              <Box ticked={showDone && f.done} />
-              <span className="sheet-row-text">{f.text}</span>
-              <Tag id={f.category} />
-            </li>
-          ),
-        )}
-        {editing && adding && <AddFocusLine onClose={() => setAdding(false)} />}
-        {blanks(FOCUS_LIMIT - rows).map((i) => (
-          <li key={`blank-${i}`} className="sheet-row sheet-row-blank">
-            <Box />
-            {editing && i === 0 && <SectionAddButton label="Add a priority" onClick={() => setAdding(true)} fill />}
           </li>
         ))}
       </ol>
