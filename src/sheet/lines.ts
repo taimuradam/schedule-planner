@@ -4,6 +4,7 @@ import type { CategoryId, Weekday } from '../model/types'
 // Empty rows left for writing in by hand during the week.
 export const MIN_GOAL_ROWS = 3
 export const MIN_DAILY_ROWS = 4
+// Blank lines drawn in each day; only as many as fit its height show.
 export const BLANK_DAY_LINES = 24
 
 export function blanks(count: number): number[] {

@@ -1,6 +1,6 @@
 import { useState, type CSSProperties, type Ref } from 'react'
 import { CATEGORIES } from '../model/categories'
-import { dayOfMonth, formatWeekRange, monthName, WEEKDAY_LETTER, WEEKDAYS } from '../model/dates'
+import { dayOfMonth, formatWeekRange, monthName, WEEKDAY_LETTER, WEEKDAY_LONG, WEEKDAYS } from '../model/dates'
 import type { DailyTask, DayTask, Goal, Weekday } from '../model/types'
 import {
   AddGoalLine,
@@ -78,29 +78,25 @@ export function Sheet({
           </div>
         </header>
 
-        <div className="sheet-top">
+        {/* One grid for the whole body: a side column, then a column per day.
+            The habit band below reuses the same columns, so each day's boxes
+            sit straight under that day. */}
+        <div className="sheet-body">
           <section className="sheet-goals" data-section="goals">
             <GoalList goals={data.goals} month={goalMonth} editing={editing} />
           </section>
 
-          <section className="sheet-daily" data-section="daily">
-            <DailyTable weekStart={weekStart} dailyTasks={dailyTasks} editing={editing} ticks={data.habitTicks} />
-          </section>
-        </div>
+          {WEEKDAYS.map((d) => {
+            const tasks = data.tasks.filter((t) => t.day === d)
+            return editing ? (
+              <EditableDay key={d} day={d} date={dayOfMonth(weekStart, d)} tasks={tasks} />
+            ) : (
+              <StaticDay key={d} day={d} date={dayOfMonth(weekStart, d)} tasks={tasks} showDone={data.showDone} />
+            )
+          })}
 
-        <section className="sheet-days" data-section="days">
-          <h2 className="sheet-label">Day by day</h2>
-          <div className="sheet-day-grid">
-            {WEEKDAYS.map((d) => {
-              const tasks = data.tasks.filter((t) => t.day === d)
-              return editing ? (
-                <EditableDay key={d} day={d} date={dayOfMonth(weekStart, d)} tasks={tasks} />
-              ) : (
-                <StaticDay key={d} day={d} date={dayOfMonth(weekStart, d)} tasks={tasks} showDone={data.showDone} />
-              )
-            })}
-          </div>
-        </section>
+          <HabitBand dailyTasks={dailyTasks} editing={editing} ticks={data.habitTicks} />
+        </div>
       </div>
     </SheetDatesContext>
   )
@@ -141,13 +137,11 @@ function GoalList({ goals, month, editing }: { goals: Goal[]; month: string; edi
   )
 }
 
-function DailyTable({
-  weekStart,
+function HabitBand({
   dailyTasks,
   editing,
   ticks,
 }: {
-  weekStart: string
   dailyTasks: DailyTask[]
   editing: boolean
   ticks?: Record<string, Weekday[]>
@@ -156,58 +150,42 @@ function DailyTable({
   const rows = dailyTasks.length + (adding ? 1 : 0)
 
   return (
-    <>
-      <div className="sheet-label-row">
-        <h2 className="sheet-label">Every day</h2>
-        {editing && !adding && rows >= MIN_DAILY_ROWS && (
-          <SectionAddButton label="Add a daily task" onClick={() => setAdding(true)} />
-        )}
-      </div>
-      <table className="sheet-daily-table">
-        <colgroup>
-          <col className="sheet-daily-name" />
-          {WEEKDAYS.map((d) => (
-            <col key={d} />
-          ))}
-        </colgroup>
-        <thead>
-          <tr>
-            <th />
-            {WEEKDAYS.map((d) => (
-              <th key={d} scope="col">
-                {WEEKDAY_LETTER[d]}
-                <span className="sheet-daily-date">{dayOfMonth(weekStart, d)}</span>
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {dailyTasks.map((t) =>
-            editing ? (
-              <EditableDailyRow key={t.id} task={t} />
-            ) : (
-              <tr key={t.id}>
-                <th scope="row">
-                  <Tag id={t.category} /> {t.text}
-                </th>
-                <BoxCells days={t.days} ticked={ticks?.[t.id]} />
-              </tr>
-            ),
+    <section className="sheet-habits" data-section="daily" role="table" aria-label="Every day">
+      <div className="sheet-habit sheet-habit-head" role="row">
+        <div className="sheet-label-row" role="columnheader">
+          <h2 className="sheet-label">Every day</h2>
+          {editing && !adding && rows >= MIN_DAILY_ROWS && (
+            <SectionAddButton label="Add a daily task" onClick={() => setAdding(true)} />
           )}
-          {editing && adding && <AddDailyRow onClose={() => setAdding(false)} />}
-          {blanks(MIN_DAILY_ROWS - rows).map((i) => (
-            <tr key={`blank-${i}`} className="sheet-row-blank">
-              <th scope="row">
-                {editing && i === 0 && (
-                  <SectionAddButton label="Add a daily task" onClick={() => setAdding(true)} fill />
-                )}
-              </th>
-              <BoxCells />
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </>
+        </div>
+        {WEEKDAYS.map((d) => (
+          <div key={d} className="sheet-habit-day" role="columnheader" aria-label={WEEKDAY_LONG[d]}>
+            {WEEKDAY_LETTER[d]}
+          </div>
+        ))}
+      </div>
+      {dailyTasks.map((t) =>
+        editing ? (
+          <EditableDailyRow key={t.id} task={t} />
+        ) : (
+          <div key={t.id} className="sheet-habit" role="row">
+            <div className="sheet-habit-name" role="rowheader">
+              <Tag id={t.category} /> {t.text}
+            </div>
+            <BoxCells days={t.days} ticked={ticks?.[t.id]} />
+          </div>
+        ),
+      )}
+      {editing && adding && <AddDailyRow onClose={() => setAdding(false)} />}
+      {blanks(MIN_DAILY_ROWS - rows).map((i) => (
+        <div key={`blank-${i}`} className="sheet-habit sheet-row-blank" role="row">
+          <div className="sheet-habit-name" role="rowheader">
+            {editing && i === 0 && <SectionAddButton label="Add a daily task" onClick={() => setAdding(true)} fill />}
+          </div>
+          <BoxCells />
+        </div>
+      ))}
+    </section>
   )
 }
 
@@ -223,7 +201,7 @@ function StaticDay({
   showDone?: boolean
 }) {
   return (
-    <div className="sheet-day" data-fit>
+    <div className="sheet-day" data-section="days">
       <DayHead day={day} date={date} />
       <ul className="sheet-task-list">
         {tasks.map((t) => (

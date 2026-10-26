@@ -115,8 +115,8 @@ export function EditableDailyRow({ task }: { task: DailyTask }) {
 
   if (line.renaming) {
     return (
-      <tr className="is-writing">
-        <th scope="row">
+      <div className="sheet-habit is-writing" role="row">
+        <div className="sheet-habit-name" role="rowheader">
           <LineEditor
             initialText={task.text}
             initialCategory={task.category}
@@ -128,27 +128,29 @@ export function EditableDailyRow({ task }: { task: DailyTask }) {
             }}
             onClose={line.stopRename}
           />
-        </th>
+        </div>
         <BoxCells days={task.days} />
-      </tr>
+      </div>
     )
   }
 
   return (
     <>
-      <tr className={`is-editable${task.active ? '' : ' is-hidden'}`} onContextMenu={line.onContextMenu}>
-        <th scope="row">
-          <span className="sheet-daily-label">
-            <Tag id={task.category} />
-            <button type="button" className="line-text" onClick={line.startRename}>
-              {task.text}
-            </button>
-            {!task.active && <span className="hidden-note">not printed</span>}
-            <MoreButton label={`Options for ${task.text}`} open={Boolean(line.menuAnchor)} onOpen={line.openMenu} />
-          </span>
-        </th>
+      <div
+        className={`sheet-habit is-editable${task.active ? '' : ' is-hidden'}`}
+        role="row"
+        onContextMenu={line.onContextMenu}
+      >
+        <div className="sheet-habit-name" role="rowheader">
+          <Tag id={task.category} />
+          <button type="button" className="line-text" onClick={line.startRename}>
+            {task.text}
+          </button>
+          {!task.active && <span className="hidden-note">not printed</span>}
+          <MoreButton label={`Options for ${task.text}`} open={Boolean(line.menuAnchor)} onOpen={line.openMenu} />
+        </div>
         <BoxCells days={task.days} />
-      </tr>
+      </div>
       {line.menuAnchor && (
         <DailyMenu item={task} anchor={line.menuAnchor} onClose={line.closeMenu} onRename={line.startRename} />
       )}
@@ -159,8 +161,8 @@ export function EditableDailyRow({ task }: { task: DailyTask }) {
 export function AddDailyRow({ onClose }: { onClose: () => void }) {
   const dispatch = usePlannerDispatch()
   return (
-    <tr className="is-writing">
-      <th scope="row">
+    <div className="sheet-habit is-writing" role="row">
+      <div className="sheet-habit-name" role="rowheader">
         <LineEditor
           repeat
           label="New daily task"
@@ -168,9 +170,9 @@ export function AddDailyRow({ onClose }: { onClose: () => void }) {
           onSubmit={(text, category) => dispatch({ type: 'daily/add', id: newId(), text, category })}
           onClose={onClose}
         />
-      </th>
+      </div>
       <BoxCells />
-    </tr>
+    </div>
   )
 }
 
@@ -180,7 +182,7 @@ export function EditableDay({ day, date, tasks }: { day: Weekday; date: number; 
   const [adding, setAdding] = useState(false)
 
   return (
-    <div className={`sheet-day${isOver ? ' is-drop-target' : ''}`} ref={setNodeRef}>
+    <div className={`sheet-day${isOver ? ' is-drop-target' : ''}`} ref={setNodeRef} data-section="days">
       <DayHead day={day} date={date} />
       <ul className="sheet-task-list">
         {tasks.map((t) => (

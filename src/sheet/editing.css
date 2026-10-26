@@ -70,8 +70,7 @@
   position: relative;
 }
 
-.is-editing .is-editable:hover,
-.is-editing tr.is-editable:hover th {
+.is-editing .is-editable:hover {
   background: #f7f9fc;
 }
 
@@ -246,22 +245,15 @@
   background: var(--edit-soft);
 }
 
-/* Daily rows */
+/* Habit rows: the ⋯ button floats at the end of the name cell. */
 
-.sheet-daily-label {
+.is-editing .sheet-habit-name {
   position: relative;
-  display: flex;
-  align-items: center;
-  gap: 0.35em;
   padding-right: 1.8em;
 }
 
-.sheet-daily-label .sheet-tag {
-  margin-right: 0 !important;
-}
-
-tr.is-hidden .sheet-daily-label > :not(.more-button),
-tr.is-hidden .sheet-box {
+.sheet-habit.is-hidden .sheet-habit-name > :not(.more-button),
+.sheet-habit.is-hidden .sheet-box {
   opacity: 0.4;
 }
 

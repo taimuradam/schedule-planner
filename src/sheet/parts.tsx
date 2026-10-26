@@ -17,12 +17,12 @@ export function Box({ ticked = false }: { ticked?: boolean }) {
   return <span className={`sheet-box${ticked ? ' is-ticked' : ''}`} />
 }
 
-/** A row of tick boxes, with a faint dash on days the habit is skipped. */
+/** A habit's seven tick boxes, one under each day, with a faint dash on days it's skipped. */
 export function BoxCells({ days, ticked }: { days?: Weekday[]; ticked?: Weekday[] }) {
   return WEEKDAYS.map((d) => (
-    <td key={d}>
+    <div key={d} className="sheet-habit-cell" role="cell">
       {!days || days.includes(d) ? <Box ticked={ticked?.includes(d)} /> : <span className="sheet-skip">–</span>}
-    </td>
+    </div>
   ))
 }
 

@@ -121,13 +121,26 @@
   margin-bottom: 0 !important;
 }
 
-/* Goals and daily tasks */
+/* The body: a side column, then one column per day. The habit band at the
+   bottom reuses the same columns (subgrid), so each habit's box for a day
+   sits straight under that day. */
 
-.sheet-top {
+.sheet-body {
+  /* Spare lines under the busiest day; the other days are drawn to match. */
+  --blank-lines: 3;
+
   flex: none;
   display: grid;
-  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
-  gap: 2.2em;
+  grid-template-columns: minmax(0, 1.45fr) repeat(7, minmax(0, 1fr));
+  align-content: start;
+  gap: 0.9em 0.5em;
+}
+
+/* Goals, in the side column */
+
+.sheet-goals {
+  min-width: 0;
+  padding-top: 0.45em;
 }
 
 .sheet-row {
@@ -139,72 +152,12 @@
   border-bottom: 0.5pt solid var(--rule);
 }
 
-.sheet-daily-table {
-  width: 100%;
-  border-collapse: collapse;
-  table-layout: fixed;
-}
-
-.sheet-daily-name {
-  width: 44%;
-}
-
-.sheet-daily-table th,
-.sheet-daily-table td {
-  height: 2em;
-  padding: 0.2em 0;
-  border-bottom: 0.5pt solid var(--rule);
-  text-align: center;
-}
-
-.sheet-daily-table thead th {
-  height: auto;
-  padding-bottom: 0.3em;
-  font-size: 0.8em;
-  font-weight: 600;
-  border-bottom-color: var(--ink-soft);
-}
-
-.sheet-daily-date {
-  margin-left: 0.25em;
-  font-weight: 400;
-  color: #777;
-}
-
-.sheet-daily-table tbody th {
-  padding-right: 0.6em;
-  font-weight: 400;
-  text-align: left;
-  overflow-wrap: break-word;
-}
-
-.sheet-daily-table tbody th .sheet-tag {
-  margin-right: 0.35em;
-}
-
-/* Day by day */
-
-.sheet-days {
-  flex: 1 1 auto;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-}
-
-.sheet-day-grid {
-  flex: 1 1 auto;
-  min-height: 0;
-  display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  grid-template-rows: minmax(0, 1fr);
-  gap: 0.5em;
-}
+/* Days */
 
 .sheet-day {
-  min-height: 0;
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
   padding: 0.45em 0.55em 0.2em;
   border: 0.75pt solid #333;
   border-radius: 0.3em;
@@ -257,22 +210,73 @@
   color: #222;
 }
 
+/* Day columns are narrow, so long words get hyphenated rather than split anywhere. */
 .sheet-task-text {
   flex: 1;
   min-width: 0;
   overflow-wrap: break-word;
+  hyphens: auto;
 }
 
-/* Blank lines fill whatever room is left; always room for at least two. */
+/* Blank lines. They don't count toward a day's height (contain: size), so
+   the busiest day sets the height for all seven: its tasks plus the spare
+   lines. Quieter days just show more blank lines down to the same point. */
 .sheet-lines {
-  flex: 1 1 0;
-  min-height: 3.7em;
+  flex: 1 1 auto;
+  min-height: calc(var(--blank-lines) * 1.85em);
   overflow: hidden;
+  contain: size;
 }
 
 .sheet-line {
   height: 1.85em;
   border-bottom: 0.5pt solid var(--rule-faint);
+}
+
+/* Habits, under the days */
+
+.sheet-habits,
+.sheet-habit {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: subgrid;
+}
+
+.sheet-habit {
+  align-items: center;
+  min-height: 2em;
+  border-bottom: 0.5pt solid var(--rule);
+}
+
+.sheet-habit-head {
+  min-height: 0;
+  padding-bottom: 0.2em;
+  border-bottom-color: var(--ink-soft);
+}
+
+.sheet-habit-head .sheet-label-row {
+  margin-bottom: 0;
+}
+
+.sheet-habit-day {
+  font-size: 0.8em;
+  font-weight: 600;
+  text-align: center;
+  color: var(--ink-soft);
+}
+
+.sheet-habit-name {
+  display: flex;
+  align-items: center;
+  gap: 0.35em;
+  min-width: 0;
+  padding: 0.25em 0.6em 0.25em 0;
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+
+.sheet-habit-cell {
+  text-align: center;
 }
 
 /* Past weeks: what got done is ticked and crossed out. */

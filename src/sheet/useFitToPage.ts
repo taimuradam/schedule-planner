@@ -3,11 +3,10 @@ import { useEffect, useLayoutEffect, useState, type RefObject } from 'react'
 const MIN_FIT = 0.6
 const STEP = 0.025
 
+// The page is laid out top to bottom at its natural height, so a week that's
+// too full simply runs past the bottom of the sheet.
 function overflows(sheet: HTMLElement): boolean {
-  if (sheet.scrollHeight > sheet.clientHeight + 1) return true
-  return Array.from(sheet.querySelectorAll<HTMLElement>('[data-fit]')).some(
-    (el) => el.scrollHeight > el.clientHeight + 1,
-  )
+  return sheet.scrollHeight > sheet.clientHeight + 1
 }
 
 /**
