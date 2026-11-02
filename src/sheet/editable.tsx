@@ -268,7 +268,7 @@ function EditableTask({ task }: { task: DayTask }) {
           <Icon name="grip" size={12} />
         </span>
         <button type="button" className="sheet-task-text line-text" onClick={line.startRename}>
-          {task.text}
+          {task.text} <Tag id={task.category} />
           <DueTag due={task.due} day={task.day} />
           {task.repeatingId && (
             <span className="repeat-mark" title={`Repeats every ${formatDays(repeatDays)}`}>
@@ -276,7 +276,6 @@ function EditableTask({ task }: { task: DayTask }) {
             </span>
           )}
         </button>
-        <Tag id={task.category} />
         <MoreButton label={`Options for ${task.text}`} open={Boolean(line.menuAnchor)} onOpen={line.openMenu} />
       </li>
       {line.menuAnchor && (

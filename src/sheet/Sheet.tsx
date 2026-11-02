@@ -208,10 +208,9 @@ function StaticDay({
           <li key={t.id} className={`sheet-task${showDone && t.done ? ' is-done' : ''}`}>
             <Box ticked={showDone && t.done} />
             <span className="sheet-task-text">
-              {t.text}
+              {t.text} <Tag id={t.category} />
               <DueTag due={t.due} day={day} />
             </span>
-            <Tag id={t.category} />
           </li>
         ))}
       </ul>
